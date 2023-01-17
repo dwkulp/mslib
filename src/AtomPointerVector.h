@@ -91,6 +91,8 @@ class AtomPointerVector : public std::vector<Atom *> {
 		int getMinAltConf();
 		int getMaxAltConf();
 
+
+               void setTempFactor(double &_temp);
 	     //   void translate(double _x, double _y, double _z);         
 	     //   void translate(const CartesianPoint &_vec);         
 		//void rotate(const Matrix &_rotMat);
@@ -236,6 +238,12 @@ inline std::string AtomPointerVector::toString() const {
 	*/
 	return ss.str();
 }
+
+inline void AtomPointerVector::setTempFactor(double &_temp){
+  //for (AtomPointerVector::iterator k = begin(); k!=end(); k++) { (*k).setTempFactor(_temp);}
+  for (uint i = 0; i < size();i++){ (*this)(i).setTempFactor(_temp);}
+}
+  
 }
 
 #endif
