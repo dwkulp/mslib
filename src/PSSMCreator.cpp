@@ -59,6 +59,7 @@ PSSMCreator::PSSMCreator(){
   expectedValues["V"] = 1.0;
   expectedValues["W"] = 1.0;
   expectedValues["Y"] = 1.0;
+  expectedValues["X"] = 1.0;
 }
 
 PSSMCreator::~PSSMCreator(){}
