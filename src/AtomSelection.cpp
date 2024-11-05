@@ -290,7 +290,23 @@ AtomPointerVector& AtomSelection::logicalSelect(string _selectString, string _na
 					}
 					if ((*avIt)->hasCoor() == cmp) {
 						condition = true;
-					} 
+					}
+				} else if (tokens[0] == "CHARGE") {
+					int cmp = 0;
+					if (tokens.size() == 2) {
+						cmp = MslTools::toInt(tokens[1]);
+						if ((*avIt)->getCharge() == cmp) {
+						  condition = true;
+						}
+					}
+				} else if (tokens[0] == "TEMPFACTOR") {
+					int cmp = 0;
+					if (tokens.size() == 2) {
+						cmp = MslTools::toInt(tokens[1]);
+						if ((*avIt)->getTempFactor() == cmp) {
+						  condition = true;
+						}
+					}
 				} else if (tokens.size() == 1 && storedSelections.find(tokens[0]) != storedSelections.end()) {
 					// another selection
 					if ((*avIt)->getSelectionFlag(tokens[0])) {
