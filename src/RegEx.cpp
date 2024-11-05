@@ -55,10 +55,88 @@ void RegEx::operator=(const RegEx & _regex) {
 void RegEx::copy(const RegEx &_regex){
 }
 
+vector<pair<int,int> > RegEx::getResidueRanges(AtomPointerVector &_ats, string _regex){
+	vector<pair<int,int> > results;
+	
+	string searchMe = "";
+	switch (stype){
+	    case PrimarySequence: 	// Atoms to 1-AA string...
+	      searchMe = PolymerSequence::toOneLetterCode(_ats);
+	      break;
+	    case SegID:
+	      for (uint i = 0; i < _ats.size();i++){
+		if (_ats[i]->getSegID().length() > 0){
+		  searchMe += _ats[i]->getSegID().substr(0,1);
+		}
+	      }
+	      break;
+	}
+
+	
+
+	//MSLOUT.stream() << "SEARCH STRING: "<<searchMe<<" ; REGEX: "<<_regex<<endl;
+	cout << "SEARCH STRING: "<<searchMe<<" ; REGEX: "<<_regex<<endl;
+
+	
+
+	// Iterative search storing indices.
+	boost::regex expression(_regex);
+
+	// REGEX MATCH APPROACH 
+	// REGEX needs to have this format ".*(WHOLE EXPRESSION).*"
+	boost::smatch what;
+	if (boost::regex_match(searchMe, what, expression, boost::match_extra)){
+
+	  if (what.size() == 2){
+	    pair<int,int> a;
+	    a.first = what.position(1);
+	    a.second = what.position(1)+what.length(1)-1;
+	    results.push_back(a);
+	  } else {
+
+	    unsigned i;
+	    std::cout << "** Match found **\n   Sub-Expressions:\n";
+	    for(i = 2; i < what.size(); ++i) {
+	      std::cout << "      $" << i << " = \"" << what[i] << " "<< what.position(i)<<"\n";
+	      pair<int,int> a;
+	      a.first = what.position(i);
+	      a.second = what.position(i)+what.length(i)-1;
+	      results.push_back(a);
+	      cout << "results: "<<results.size()<<endl;
+	    }
+	  }
+	    
+	} else {
+	  cout << "NO MATCH FOUND"<<endl;
+	}
+
+	// ITERATOR APPROACH
+	/*
+	//boost::sregex_token_iterator r1(searchMe.begin(),searchMe.end(),expression,-1);
+	boost::sregex_iterator r1(searchMe.begin(),searchMe.end(),expression);
+	boost::sregex_iterator r2;
+	if (r1 == r2){
+	  cout << "NO MATCH\n";
+	}
+	while (r1 != r2){
+		cout << "MATCH: "<<*r1<<" "<<(*r1).position()<<" "<<(*r1).length()<<endl;
+
+		pair<int,int> a;
+		a.first = (*r1).position();
+		a.second = (*r1).position()+(*r1).length()-1;
+		results.push_back(a);
+
+		*r1++;
+	}
+	*/
+	return results;
+
+}
 
 vector<pair<int,int> > RegEx::getResidueRanges(Chain &_ch, string _regex){
 
 	vector<pair<int,int> > results;
+	
 	
 	string searchMe = "";
 	switch (stype){
@@ -77,13 +155,17 @@ vector<pair<int,int> > RegEx::getResidueRanges(Chain &_ch, string _regex){
 
 	
 
-	MSLOUT.stream() << "SEARCH STRING: "<<searchMe<<" ; REGEX: "<<_regex<<endl;
+	//MSLOUT.stream() << "SEARCH STRING: "<<searchMe<<" ; REGEX: "<<_regex<<endl;
+	cout << "SEARCH STRING: "<<searchMe<<" ; REGEX: "<<_regex<<endl;
 	// Iterative search storing indices.
 	boost::regex expression(_regex);
 
 	//boost::sregex_token_iterator r1(searchMe.begin(),searchMe.end(),expression,-1);
 	boost::sregex_iterator r1(searchMe.begin(),searchMe.end(),expression);
 	boost::sregex_iterator r2;
+	if (r1 == r2){
+	  cout << "NO MATCH\n";
+	}
 	/*
 	MSLOUT.stream() << "r1: "<<(*r1).size()<<endl;
 	for (uint i =0 ;i < (*r1).size();i++){
@@ -100,8 +182,6 @@ vector<pair<int,int> > RegEx::getResidueRanges(Chain &_ch, string _regex){
 		results.push_back(a);
 
 		*r1++;
-
-		
 	}
 
 	return results;

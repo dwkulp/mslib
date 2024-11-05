@@ -60,6 +60,7 @@ public:
     void operator=(const RegEx & _regex);
 
     // returns std::pairs of start-end ranges for all matches to regex.
+    std::vector<std::pair<int,int> > getResidueRanges(AtomPointerVector &_ats, std::string _regex);
     std::vector<std::pair<int,int> > getResidueRanges(Chain &_ch, std::string _regex);
 
 
@@ -69,7 +70,6 @@ private:
     void copy(const RegEx & _regex);
 
     StringType stype;
-
 };
 
 // INLINE FUNCTIONS
