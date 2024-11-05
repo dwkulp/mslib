@@ -50,7 +50,7 @@ class PDBFragments{
 		void setPdbDir(std::string _pdbdir);
 		void setBBQTable(std::string _table);
 
-		int searchForMatchingFragmentsLinear(System &_sys, string &_startRes, string &_endRes, string _regex, double _rmsdTol);
+                int searchForMatchingFragmentsLinear(System &_sys, string &_startRes, string &_endRes, string _regex, double _rmsdTol,int _maxFrags=-1);
 		int searchForMatchingFragmentsStems(System &_sys, std::vector<std::string> &_stemResidues,int _numResiduesInFragment=-1,std::string _regex="",double _rmsdTol=0.5);
 		int searchForMatchingFragmentsSpots(System &_sys, std::vector<std::string> &_stemResidues,int _maxResiduesInFragment, double _rmsdTol);
 
@@ -74,7 +74,14 @@ class PDBFragments{
 		enum searchType { linear=0, stemOnly=1, discreteSpots=2 };
 		void printMe();
 
-		void setIncludeFullFile(bool _flag); 
+		void setIncludeFullFile(bool _flag);
+
+		void setMaxFragments(int _maxNumFrags);
+		int getMaxFragments();
+
+		void setStoreResfileLines(bool _flag) { storeResfileLinesFlag = _flag; }
+		vector<string> getResfileLines() { return resfile_lines; }
+		vector<string> getPDBNames() { return pdbnames; }
 	private:
 		std::string fragDbFile;
 		dbAtoms fragType;
@@ -82,6 +89,10 @@ class PDBFragments{
 		AtomPointerVector fragDB;
 		std::string pdbDir;
 		bool includeFullFile;
+		int maxNumFrags;
+		bool storeResfileLinesFlag;
+		vector<string> resfile_lines;
+		vector<string> pdbnames;
 		map<std::string,std::string> matchedSequences;
 		vector<AtomContainer *> lastResults;
 };
@@ -137,7 +148,9 @@ inline void PDBFragments::printMe(){
 inline void PDBFragments::setIncludeFullFile(bool _flag){
   includeFullFile = _flag;
 }
-
+ 
+inline void PDBFragments::setMaxFragments(int _maxNumFrags){ maxNumFrags = _maxNumFrags;}
+inline int PDBFragments::getMaxFragments(){ return maxNumFrags;}
 }
 
 #endif

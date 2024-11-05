@@ -797,7 +797,7 @@ int PDBFragments::searchForMatchingFragmentsSpots(System &_sys, std::vector<std:
 }
 
 
-int PDBFragments::searchForMatchingFragmentsLinear(System &_sys, string &_startRes, string &_endRes, string _regex, double _rmsdTol){
+int PDBFragments::searchForMatchingFragmentsLinear(System &_sys, string &_startRes, string &_endRes, string _regex, double _rmsdTol, int _maxFrags){
 
   if (  ! ( _sys.positionExists(_startRes)  && _sys.positionExists(_endRes) ) ) {
     cerr << "ERROR 2342 residue(s) don't exist: "<<_startRes<<" "<<_endRes<<endl;
@@ -834,6 +834,11 @@ int PDBFragments::searchForMatchingFragmentsLinear(System &_sys, string &_startR
   stringstream ss;
   for (uint i = 0 ; i < fragDB.size()-residueSeparation;i++){
 
+    // Break if we already found enough fragments
+    if (_maxFrags != -1 && numFrags > _maxFrags){
+      break;
+    }
+    
     // Filter by pdb/chain breaks
     if (fragDB(i).getSegID() != fragDB(i+residueSeparation).getSegID()){
       continue;
@@ -855,7 +860,10 @@ int PDBFragments::searchForMatchingFragmentsLinear(System &_sys, string &_startR
       cerr << "ERROR in alignment: "<<fragBB.size()<<" "<<bbAts.size()<<endl;
       continue;
     }
-
+    // Simple distance squared check to speed things up.
+    if (fragBB(0).distance2(bbAts(0)) > 4){
+      continue;
+    }
     double rmsd = fragBB.rmsd(bbAts);
     if (rmsd > _rmsdTol){
       continue;
@@ -864,8 +872,7 @@ int PDBFragments::searchForMatchingFragmentsLinear(System &_sys, string &_startR
     
     matchIndex++;
     
-
-
+   
     if (_regex != ""){
       if (!boost::regex_search(matchSeq.c_str(),boost::regex(_regex))){
 	MSLOUT.stream() << "RegEx NOT Matched. "<<matchSeq<<endl;
@@ -1173,6 +1180,12 @@ int PDBFragments::searchForMatchingFragmentsStems(System &_sys, vector<string> &
 
 
 
+			// Adding clash filter?
+			//if (_checkForClashes){
+			  
+			//}
+
+
 
 			matchIndex++;
 			fragStem.applySavedCoor("pre");
@@ -1312,7 +1325,9 @@ int PDBFragments::searchForMatchingFragmentsStems(System &_sys, vector<string> &
 
 				      MSLOUT.stream() << "BB RMSD: "<<bbRMSD<<endl;
 				      fprintf(stdout, "%8.3f",bbRMSD);
-				      if (bbRMSD > 1.51){
+				      //if (bbRMSD > 1.51){
+				      //if (bbRMSD > 0.3){
+				      if (bbRMSD > _rmsdTol*3){
 					successful = false;
 					continue;
 				      }
