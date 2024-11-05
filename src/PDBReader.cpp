@@ -308,6 +308,7 @@ bool PDBReader::read(bool _noHydrogens) {
 					atoms.back()->setElement(atom.D_ELEMENT_SYMBOL);
 					atoms.back()->setTempFactor(atom.D_TEMP_FACT);
 					atoms.back()->setSegID(atom.D_SEG_ID);
+					atoms.back()->setCharge(atom.D_CHARGE);
 
 					if (atom.D_X < boundingCoords["minX"]){
 						boundingCoords["minX"] = atom.D_X;
