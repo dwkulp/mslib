@@ -37,8 +37,8 @@
 
 # Define compiler command
 #CC  = g++ 
-CCOPTIM = g++ -Wall -Wno-sign-compare -O3 -msse3 -mfpmath=sse -funroll-loops 
-CCDEBUG = g++ -Wall -Wno-sign-compare -msse3 -mfpmath=sse -funroll-loops -g
+CCOPTIM = g++ -Wall -Wno-parentheses -Wno-sign-compare -O3 -msse3 -mfpmath=sse -funroll-loops 
+CCDEBUG = g++ -Wall -Wno-parentheses -Wno-sign-compare -msse3 -mfpmath=sse -funroll-loops -g
 
 
 GSLDEFAULT = F
@@ -52,7 +52,7 @@ RDEFAULT = F
 MACOSDEFAULT = F
 DEBUGDEFAULT = F
 TESTINGDEFAULT = F
-MSLOUT_DEBUG_OFFDEFAULT = T
+MSLOUT_DEBUG_OFFDEFAULT = F
 STATICDEFAULT = T
 EXTERNAL_LIB_DIR_DEFAULT=/usr/lib
 EXTERNAL_INCLUDE_DIR_DEFAULT=/usr/include
@@ -106,7 +106,7 @@ PROGRAMS = getSphericalCoordinates fillInSideChains generateCrystalLattice getDi
 	   getSelection calculateSasa printSequence \
            insertLoopIntoTemplate setConformation coiledCoilBuilder findClashes mutate calculateDistanceOrAngle \
 	   repackSideChains backrubPdb renumberResidues getChiRecovery createEnergyTable createEBL \
-	   designSideChains generateCoiledCoils trimConformerLibrary pdb2crd 
+	   designSideChains generateCoiledCoils trimConformerLibrary pdb2crd glycanTransfer
 
 # PROGRAMS/SANDBOX_THAT_DO_NOT_COMPLILE = testBoost testRInterface  testLinkedPositions testEEF1 testEEF1_2  testAddCharmmIdentity testNonBondedCutoff 
 # PROGRAMS/SANDBOX_THAT_COMPILE_BUT_SEGFAULT =  testTree
