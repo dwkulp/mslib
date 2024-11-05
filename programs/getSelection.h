@@ -38,6 +38,7 @@ struct Options {
 		required.push_back("list");
 		optional.push_back("resSel");
 		optional.push_back("atomSel");
+		optional.push_back("regex");
 		optional.push_back("sequence");
 		optional.push_back("length");
 		optional.push_back("outPdb");
@@ -59,6 +60,7 @@ struct Options {
 	std::string resSel;
 	std::string atomSel;
 	std::string outPdb;
+        std::vector<std::string> regex; // Regular expresssion to match primary sequence
 	bool sequence;
 	bool length;
 	std::string charmmTop;

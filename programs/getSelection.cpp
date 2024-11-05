@@ -29,14 +29,19 @@ You should have received a copy of the GNU Lesser General Public
 #include <string>
 #include <vector>
 #include <map>
+#include <iostream>
+
 #include "getSelection.h"
 #include "OptionParser.h"
 #include "System.h"
+#include "RegEx.h"
 #include "ResidueSelection.h"
 #include "AtomSelection.h"
 #include "MslTools.h"
 #include "CharmmTopologyReader.h"
 #include "AtomContainer.h"
+#include "PDBWriter.h"
+#include "CIFWriter.h"
 
 using namespace std;
 
@@ -59,15 +64,22 @@ int main(int argc, char *argv[]){
 	for (uint p = 0; p < pdbs.size();p++){
 
 	  string name = opt.outPdb;
+	  bool cifOut = false;
+	  if (MslTools::pathExtension(opt.outPdb) == "cif"){
+	    cifOut = true;
+	  }
+	  
 	  if (opt.list != ""){
-	    name = MslTools::stringf("%s_%s.pdb",opt.outPdb.c_str(),MslTools::getFileName(pdbs[p]).c_str());
+	    if (cifOut){
+	      name = MslTools::stringf("%s_%s.cif",MslTools::getFileName(opt.outPdb).c_str(),MslTools::getFileName(pdbs[p]).c_str());
+	    } else {
+	      name = MslTools::stringf("%s_%s.pdb",MslTools::getFileName(opt.outPdb).c_str(),MslTools::getFileName(pdbs[p]).c_str());
+	    }
 	  }
 
 	  // Read-in list of PDBS
 	  System sys;
-	  sys.readPdb(pdbs[p]);
-
-
+	  sys.readStructureFile(pdbs[p]);
 
 	  if (opt.resSel != ""){
 	    ResidueSelection sel(sys);
@@ -108,10 +120,17 @@ int main(int argc, char *argv[]){
 
 	      if (opt.outPdb != ""){
 		cout << "Writing "<<name<<endl;
-		PDBWriter pout;
-		pout.open(name);
-		pout.write(a);
-		pout.close();
+		if (cifOut){
+		  CIFWriter cfout;
+		  cfout.open(name);
+		  cfout.write(a);
+		  cfout.close();
+		} else {
+		  PDBWriter pout;
+		  pout.open(name);
+		  pout.write(a);
+		  pout.close();
+		}
 	      } else {
 
 		for (uint i = 0; i < a.size();i++){
@@ -119,6 +138,48 @@ int main(int argc, char *argv[]){
 		}
 	      }
 			
+	    }
+	  }
+
+	  if (opt.regex.size() != 0){
+
+	    stringstream ss;
+	    AtomPointerVector a;
+	    for (uint r = 0; r < opt.regex.size();r++){
+	      AtomSelection sel(sys.getAtomPointers());
+	      AtomPointerVector CAats = sel.select("name CA");
+
+	      RegEx re;
+	      re.setStringType(RegEx::PrimarySequence); 
+	      vector<pair<int,int> > matchingResidueIndices = re.getResidueRanges(CAats,opt.regex[r]);
+
+	      for (uint i = 0; i < matchingResidueIndices.size();i++){
+		for (uint r = matchingResidueIndices[i].first; r <= matchingResidueIndices[i].second;r++){
+		  ss << CAats[r]->getPositionId() <<",";
+		  a.push_back(CAats[r]);
+		}
+	      }
+	    }
+	    cout << "REGEX_POSITIONS: "<<ss.str()<<endl;
+
+	    if (opt.outPdb != ""){
+		cout << "Writing "<<name<<endl;
+		if (cifOut){
+		  CIFWriter cfout;
+		  cfout.open(name);
+		  cfout.write(a);
+		  cfout.close();
+		} else {
+		  PDBWriter pout;
+		  pout.open(name);
+		  pout.write(a);
+		  pout.close();
+		}
+	      } else {
+
+		for (uint i = 0; i < a.size();i++){
+		  cout <<a[i]->toString()<<endl;
+		}
 	    }
 	  }
 
@@ -153,11 +214,17 @@ int main(int argc, char *argv[]){
 
 	    if (opt.outPdb != ""){
 
-
-	      PDBWriter pout;
-	      pout.open(name);
-	      pout.write(storeValidResidues.getAtomPointers());
-	      pout.close();
+	      if (cifOut){
+		CIFWriter cfout;
+		cfout.open(name);
+		cfout.write(storeValidResidues.getAtomPointers());
+		cfout.close();
+	      } else {
+		PDBWriter pout;
+		pout.open(name);
+		pout.write(storeValidResidues.getAtomPointers());
+		pout.close();
+	      }
 	    } 
 
 
@@ -225,7 +292,16 @@ Options setupOptions(int theArgc, char * theArgv[]){
 	if (OP.fail()){
 		opt.atomSel = "";
 	}
-
+	int index = 0;
+	while (true) {
+		string sele = OP.getString("regex", index);
+		if (OP.fail()) {
+			break;
+		}
+		opt.regex.push_back(sele);
+		index++;
+	}
+	
 	opt.outPdb = OP.getString("outPdb");
 	if (OP.fail()){
 	  cout << "No output pdb !"<<endl;
@@ -237,7 +313,7 @@ Options setupOptions(int theArgc, char * theArgv[]){
 	  opt.charmmTop = "";
 	}
 
-	if (opt.resSel == "" && opt.atomSel == "" && opt.charmmTop == ""){
+	if (opt.resSel == "" && opt.atomSel == "" && opt.charmmTop == "" && opt.regex.size() == 0){
 		cerr << "ERROR 1111 either resSel or atomSel or charmmTop has to be specified.\n";
 		exit(1111);
 	}
@@ -246,7 +322,7 @@ Options setupOptions(int theArgc, char * theArgv[]){
 	      (opt.resSel != "" && opt.atomSel != "")  ||
 	      (opt.resSel != "" && opt.charmmTop != "")  ||
 	      (opt.atomSel != "" && opt.charmmTop != "")) {
-		cerr << "ERROR 1111 either resSel OR atomSel OR charmmTop has to be specified, but all three or two/three.\n";
+		cerr << "ERROR 1111 either resSel OR atomSel OR charmmTop OR regex has to be specified, but all three or two/three.\n";
 		exit(1111);
 	}
 
