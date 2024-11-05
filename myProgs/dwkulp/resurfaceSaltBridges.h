@@ -25,6 +25,8 @@ struct Options {
 		optional.push_back("scoreOnly");
 		optional.push_back("selectPositions");
 		optional.push_back("percentSasa");
+		optional.push_back("fasta");
+		optional.push_back("appendName");
 		defaultArgs.push_back("configfile");
 
 	}
@@ -43,6 +45,8 @@ struct Options {
         string selectPositions;
         double percentSasa;
         bool scoreOnly;
+        bool fasta_only;
+        string appendName;
 	bool debug;
 
 	// Storage for different types of options
