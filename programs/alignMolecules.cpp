@@ -33,6 +33,8 @@ You should have received a copy of the GNU Lesser General Public
 #include "release.h"
 #include "AtomSelection.h"
 #include "Transforms.h"
+#include "RegEx.h"
+#include "MslExceptions.h"
 #include "MslTools.h"
 
 using namespace std;
@@ -76,6 +78,7 @@ struct Options {
 	string pdb2; // second pdb
 	vector<string> sele1; // atom selection one
 	vector<string> sele2; // atom selection two
+        vector<string> regex; // Regular expresssion to match primary sequence
 	unsigned int model1; // model of pdb 1 (if NMR structure)
 	bool setModel1; // if model1 was given activates a setter
 	unsigned int model2; // model of pdb 2 (if NMR structure)
@@ -133,6 +136,7 @@ Options parseOptions(int _argc, char * _argv[], Options defaults);
 void usage();
 void version();
 void help(Options defaults);
+void addAtomsByRegEx(AtomPointerVector &_input, AtomPointerVector &_output,string &_regex);
 
 
 
@@ -213,11 +217,13 @@ int main(int argc, char *argv[]) {
 
 	AtomPointerVector av1 = sys1.getAtomPointers();
 	AtomPointerVector av2 = sys2.getAtomPointers();
-	
+
 	AtomPointerVector alignAtoms1;
 	if (opt.sele1.size() == 0) {
-		// select all atoms
-		alignAtoms1.insert(alignAtoms1.end(), av1.begin(), av1.end());
+
+	  // select all atoms
+	  alignAtoms1.insert(alignAtoms1.end(), av1.begin(), av1.end());
+
 	} else {
 		AtomSelection sel1(av1);
 		for (unsigned int i=0; i<opt.sele1.size(); i++) {
@@ -227,12 +233,29 @@ int main(int argc, char *argv[]) {
 			alignAtoms1.insert(alignAtoms1.end(), selAtom.begin(), selAtom.end());
 		}
 	}
-	cout << "Selected " << alignAtoms1.size() << " reference atoms for pdb " << opt.pdb1 << endl;
+
+	int numAts_priorTo_RegEx = alignAtoms1.size();
+	if (opt.regex.size() != 0){
+	  AtomPointerVector newRegExAts1;
+
+	  for (uint r = 0; r < opt.regex.size();r++){
+	    cout << "REGEX["<<r<<"]: ->"<< opt.regex[r]<<"<-"<<endl;
+	    addAtomsByRegEx(alignAtoms1,newRegExAts1,opt.regex[r]);
+	  }
+	  
+	  alignAtoms1.clear();
+	  alignAtoms1 = newRegExAts1;	  
+	}
+
+	cout << "->Selected " << alignAtoms1.size() << " (prior to RegEx: "<<numAts_priorTo_RegEx<<") reference atoms for pdb " << opt.pdb1 << endl;
+
 
 	AtomPointerVector alignAtoms2;
 	if (opt.sele2.size() == 0) {
-		// select all atoms
-		alignAtoms2.insert(alignAtoms2.end(), av2.begin(), av2.end());
+
+	  // select all atoms
+	  alignAtoms2.insert(alignAtoms2.end(), av2.begin(), av2.end());
+
 	} else {
 		AtomSelection sel2(av2);
 		for (unsigned int i=0; i<opt.sele2.size(); i++) {
@@ -242,7 +265,31 @@ int main(int argc, char *argv[]) {
 			alignAtoms2.insert(alignAtoms2.end(), selAtom.begin(), selAtom.end());
 		}
 	}
-	cout << "Selected " << alignAtoms2.size() << " reference atoms for pdb " << opt.pdb2 << endl;
+
+	/*
+
+	numAts_priorTo_RegEx = alignAtoms2.size();
+	if (opt.regex != ""){
+	  AtomPointerVector newRegExAts2;
+	  addAtomsByRegEx(alignAtoms2,newRegExAts2,opt);
+	  alignAtoms2.clear();
+	  alignAtoms2 = newRegExAts2;
+	}
+	*/
+	numAts_priorTo_RegEx = alignAtoms2.size();
+	if (opt.regex.size() != 0){
+	  AtomPointerVector newRegExAts2;
+
+	  for (uint r = 0; r < opt.regex.size();r++){
+	    addAtomsByRegEx(alignAtoms2,newRegExAts2,opt.regex[r]);
+	  }
+	  
+	  alignAtoms2.clear();
+	  alignAtoms2 = newRegExAts2;	  
+	}
+
+	
+	cout << "->Selected " << alignAtoms2.size() << " (prior to RegEx: "<<numAts_priorTo_RegEx<<") reference atoms for pdb " << opt.pdb2 << endl;
 
 	if (alignAtoms1.size() != alignAtoms2.size()) {
 		cerr << "The number of atoms selected for pdb 1 (" << alignAtoms1.size() << ") does not match the number of atoms selected for pdb 2 (" << alignAtoms2.size() << ")" << endl;
@@ -306,6 +353,28 @@ int main(int argc, char *argv[]) {
 
 }
 
+
+void addAtomsByRegEx(AtomPointerVector &_input, AtomPointerVector &_output,string &_regex){
+
+  // Only use 1 atom per residue, "CA"
+  AtomSelection sel(_input);
+  AtomPointerVector CAats = sel.select("name CA");
+
+  RegEx re;
+  re.setStringType(RegEx::PrimarySequence); 
+  vector<pair<int,int> > matchingResidueIndices = re.getResidueRanges(CAats,_regex);
+
+  // Do we get first, last or other match?
+	    //for (uint r = matchingResidueIndices[matchingResidueIndices.size()-1].first; r <= matchingResidueIndices[matchingResidueIndices.size()-1].second;r++){
+  for (uint i = 0; i < matchingResidueIndices.size();i++){
+      for (uint r = matchingResidueIndices[i].first; r <= matchingResidueIndices[i].second;r++){
+	Atom *at = CAats[r];
+	_output.push_back(at);
+      }
+  }
+
+}
+
 Options parseOptions(int _argc, char * _argv[], Options defaults) {
 
 	/******************************************
@@ -333,6 +402,7 @@ Options parseOptions(int _argc, char * _argv[], Options defaults) {
 	opt.required.push_back("pdb2");
 	opt.allowed.push_back("sele1");
 	opt.allowed.push_back("sele2");
+	opt.allowed.push_back("regex");
 	opt.allowed.push_back("model1");
 	opt.allowed.push_back("model2");
 	opt.allowed.push_back("outputPdb2");
@@ -482,6 +552,15 @@ Options parseOptions(int _argc, char * _argv[], Options defaults) {
 	//if (opt.sele2.size() == 0) {
 	//	opt.sele2.push_back("all");
 	//}
+	index = 0;
+	while (true) {
+		string sele = OP.getString("regex", index);
+		if (OP.fail()) {
+			break;
+		}
+		opt.regex.push_back(sele);
+		index++;
+	}
 
 	opt.model1 = OP.getInt("model1");
 	if (!OP.fail()) {
@@ -538,6 +617,7 @@ void help(Options defaults) {
 	cout << " *     noAlign          : calculate the current RMSD without aligning                      *" << endl;
 	cout << " *     noOutputPdb      : do not write a PDB file out                                      *" << endl;
 	cout << " *                                                                                         *" << endl;
+	cout << " *     regex            : regular expression(s) for selections (order agnostic)            *" << endl;
 	cout << " * NOTE: No order is assumed WITHIN a selection but if multiple --sele1/sele2 are          *" << endl;
 	cout << " *       given order is preserved.                                                         *" << endl;
 	cout << " *       If no selection is given, all atoms are used.                                     *" << endl;
