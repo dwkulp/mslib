@@ -21,6 +21,8 @@ class Atom3DGrid {
 		Atom3DGrid(AtomPointerVector & _atoms, double _gridSize=1.0);
 		~Atom3DGrid();
 
+		bool addAtoms(AtomPointerVector &_ats);
+		
 		unsigned int getXSize() const;
 		unsigned int getYSize() const;
 		unsigned int getZSize() const;
@@ -29,10 +31,21 @@ class Atom3DGrid {
 
 		AtomPointerVector getCell(unsigned int _i, unsigned int _j, unsigned int _k);
 		AtomPointerVector getNeighbors(unsigned int _atomIndex);
+
+		// Get the neighbors for this set of atoms, which are assumed to be in the
+		// same coordinate frame.
+		bool getNeighbors(AtomPointerVector &_ats,AtomPointerVector &_neighbors, std::string _select="");
+
+		// Check all positions
+		void resetAllHiddenFlags();
+
+		// Set a position to skip by adding a 'hidden' flag to each atom with this posId
+		void setPositionToSkip(std::string _posId); 
 		
 	private:
 		void setup(AtomPointerVector & _atoms, double _gridSize);
 		void buildGrid();
+		bool gridBuilt;
 		double gridSize;
 		AtomPointerVector atoms;
 		std::vector<std::vector<unsigned int> > atomIndeces;
@@ -46,7 +59,7 @@ class Atom3DGrid {
 		unsigned int xSize;
 		unsigned int ySize;
 		unsigned int zSize;
-		
+
 };
 
 inline AtomPointerVector Atom3DGrid::getCell(unsigned int _i, unsigned int _j, unsigned int _k) { return grid[_i][_j][_k]; }

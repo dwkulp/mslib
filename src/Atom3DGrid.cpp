@@ -1,4 +1,5 @@
 #include "Atom3DGrid.h"
+#include "AtomSelection.h"
 
 using namespace MSL;
 using namespace std;
@@ -20,6 +21,7 @@ Atom3DGrid::~Atom3DGrid() {
 void Atom3DGrid::setup(AtomPointerVector & _atoms, double _gridSize) {
 	gridSize = _gridSize;
 	atoms = _atoms;
+	
 	xMin = 0.0;
 	xMax = 0.0;
 	yMin = 0.0;
@@ -29,6 +31,7 @@ void Atom3DGrid::setup(AtomPointerVector & _atoms, double _gridSize) {
 	xSize = 0;
 	ySize = 0;
 	zSize = 0;
+	gridBuilt = false;
 }
 
 
@@ -102,8 +105,128 @@ void Atom3DGrid::buildGrid() {
 		}
 	}
 
+
+	// Set gridBuilt = true;
+	gridBuilt = true;
+	
+	
+}
+bool Atom3DGrid::addAtoms(AtomPointerVector &_ats){
+  AtomPointerVector::iterator previousEnd = atoms.end();
+  atoms += _ats;
+  atomIndeces.resize(atoms.size()+_ats.size(),vector<unsigned int>(3, 0));
+
+  double xLen = xMax - xMin;
+  double yLen = yMax - yMin;
+  double zLen = zMax - zMin;
+  double xCenter = (xMax + xMin)/2;
+  double yCenter = (yMax + yMin)/2;
+  double zCenter = (zMax + zMin)/2;
+  xSize = (int)(xLen/gridSize) + 2;  // add another bin to catch overflow due to loss of precision
+  ySize = (int)(yLen/gridSize) + 2;  // for eg. int bin = int(6.9999999999999999999999500) turns out to be 7 
+  zSize = (int)(zLen/gridSize) + 2;
+  double xStart = xCenter - (double)xSize/2 * gridSize;
+  double yStart = yCenter - (double)ySize/2 * gridSize;
+  double zStart = zCenter - (double)zSize/2 * gridSize;
+	
+  
+  for (AtomPointerVector::iterator k=previousEnd; k!=atoms.end(); k++) {
+		if (*k != NULL) {
+			double x = (*k)->getX();
+			double y = (*k)->getY();
+			double z = (*k)->getZ();
+			
+			unsigned int xBin = (int)((x - xStart)/gridSize);
+			unsigned int yBin = (int)((y - yStart)/gridSize);
+			unsigned int zBin = (int)((z - zStart)/gridSize);
+			//cout << **k << " " << xBin << " " << yBin << " " << zBin << endl;
+			grid[xBin][yBin][zBin].push_back(*k);
+			atomIndeces[k-atoms.begin()][0] = xBin;
+			atomIndeces[k-atoms.begin()][1] = yBin;
+			atomIndeces[k-atoms.begin()][2] = zBin;
+		}
+  }
+
+  return true;
 }
 
+bool Atom3DGrid::getNeighbors(AtomPointerVector &_ats, AtomPointerVector &_neighbors,string _select){
+
+  if (!gridBuilt) return false;
+
+  AtomPointerVector sel_ats;
+  if (_select != ""){
+    AtomSelection sel(_ats);
+    sel_ats = sel.select(_select);
+  } else {
+    sel_ats = _ats;
+  }
+
+  // Max,Min,Size and gridSize all have been defined.
+  double xCenter = (xMax + xMin)/2;
+  double yCenter = (yMax + yMin)/2;
+  double zCenter = (zMax + zMin)/2;
+  double xStart = xCenter - (double)xSize/2 * gridSize;
+  double yStart = yCenter - (double)ySize/2 * gridSize;
+  double zStart = zCenter - (double)zSize/2 * gridSize;
+
+  for (AtomPointerVector::iterator k=sel_ats.begin(); k!=sel_ats.end(); k++) {
+    if (*k == NULL) continue;
+
+    
+    double x = (*k)->getX();
+    double y = (*k)->getY();
+    double z = (*k)->getZ();
+			
+    unsigned int iMin = (int)((x - xStart)/gridSize);
+    unsigned int jMin = (int)((y - yStart)/gridSize);
+    unsigned int kMin = (int)((z - zStart)/gridSize);
+    unsigned int iMax = iMin;
+    unsigned int jMax = jMin;
+    unsigned int kMax = kMin;
+
+    if (iMin > 0) {
+      iMin--;
+    }
+    if (iMax < xSize - 1) {
+      iMax++;
+    }
+    if (iMax >= xSize){
+      iMax = xSize-1;
+    }
+    if (jMin > 0) {
+      jMin--;
+    }
+    if (jMax < ySize - 1) {
+      jMax++;
+    }
+    if (jMax >= ySize){
+      jMax = ySize-1;
+    }
+    if (kMin > 0) {
+      kMin--;
+    }
+    if (kMax < zSize - 1) {
+      kMax++;
+    }
+    if (kMax >= zSize){
+      kMax = zSize - 1;
+    }
+    
+    for (unsigned int i=iMin; i<=iMax; i++) {
+      for (unsigned int j=jMin; j<=jMax; j++) {
+	for (unsigned int k=kMin; k<=kMax; k++) {
+	  _neighbors.insert(_neighbors.end(), grid[i][j][k].begin(), grid[i][j][k].end());
+	}
+      }
+    }
+
+  }
+
+
+
+  return true;
+}
 AtomPointerVector Atom3DGrid::getNeighbors(unsigned int _atomIndex) {
 	AtomPointerVector out;
 	unsigned int iMin = atomIndeces[_atomIndex][0];	
@@ -148,3 +271,17 @@ AtomPointerVector Atom3DGrid::getNeighbors(unsigned int _atomIndex) {
 	return out;
 }
 
+
+void Atom3DGrid::resetAllHiddenFlags(){
+  for (uint i = 0; i < atoms.size();i++){
+    atoms[i]->setSelectionFlag("hidden",false);
+  }
+}
+
+void Atom3DGrid::setPositionToSkip(string _posId){
+  for (uint i = 0; i < atoms.size();i++){
+    if (atoms[i]->getPositionId() == _posId){
+      atoms[i]->setSelectionFlag("hidden",true);
+    }
+  }  
+}
