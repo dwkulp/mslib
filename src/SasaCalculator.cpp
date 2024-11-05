@@ -167,6 +167,35 @@ string SasaCalculator::getSasaTable(bool _byAtom) {
 			ss << line;
 		}
 	} else {
+	       /*
+	SASA reference:
+	Protein Engineering vol.15 no.8 pp.659–667, 2002
+	Quantifying the accessible surface area of protein residues in their local environment
+	Uttamkumar Samanta Ranjit P.Bahadur and  Pinak Chakrabarti
+      */
+      map<string,double> refSasa;
+      refSasa["G"] = 83.91;
+      refSasa["A"] = 116.40;
+      refSasa["S"] = 125.68;
+      refSasa["C"] = 141.48;
+      refSasa["P"] = 144.80;
+      refSasa["T"] = 148.06;
+      refSasa["D"] = 155.37;
+      refSasa["V"] = 162.24;
+      refSasa["N"] = 168.87;
+      refSasa["E"] = 187.16;
+      refSasa["Q"] = 189.17;
+      refSasa["I"] = 189.95;
+      refSasa["L"] = 197.99;
+      refSasa["H"] = 198.51;
+      refSasa["K"] = 207.49;
+      refSasa["M"] = 210.55;
+      refSasa["F"] = 223.29;
+      refSasa["Y"] = 238.30;
+      refSasa["R"] = 249.26;
+      refSasa["W"] = 265.42;
+
+                
 		map<string,double> residueSasa;
 		string resId = "";
 		char line[1000];
@@ -183,7 +212,19 @@ string SasaCalculator::getSasaTable(bool _byAtom) {
 		}
 
 		for(map<string,double>::iterator it = residueSasa.begin(); it != residueSasa.end(); it++) {
-			sprintf (line,"%11.5f\n",it->second);
+		  string chain;
+		  int resnum;
+		  string icode;
+		  string identity;
+		  MslTools::parseIdentityId(it->first, chain,resnum,icode,identity);
+		  map<string,double>::iterator findIt = refSasa.find(MslTools::getOneLetterCode(identity));
+		  double nSasa = 0;
+		  if (findIt != refSasa.end()){
+		    nSasa = it->second / refSasa[MslTools::getOneLetterCode(identity)];
+		  } else {
+		    nSasa = 1;
+		  }
+			sprintf (line,"%11.5f\t%11.5f\n",it->second,nSasa);
 			ss << it->first << line;
 		}
 
