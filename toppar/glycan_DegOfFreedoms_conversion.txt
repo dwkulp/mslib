@@ -1,0 +1,31 @@
+# backbone, side chain and glycan degrees of freedom for N-linked glycans
+
+ASN    phi    -C N CA C
+ASN    psi    N CA C +N
+ASN    chi1   N CA CB CG
+ASN    chi2   CA CB CG ND2
+
+ASN-NAG   nlink1  CB CG ND2 +C1          
+ASN-NAG   nlink2  CG ND2 +C1 +O5
+
+NAG-NAG   beta14a  C3 C4 O4 +C1
+NAG-NAG   beta14b  C4 O4 +C1 +O5
+
+NAG-BMA beta14a C3 C4 O4 +C1
+NAG-BMA beta14b C4 O4 +C1 +O5
+
+BMA-MAN alpha13a C2 C3 O3 +C1
+BMA-MAN alpha13b C3 O3 +C1 +O5
+
+BMA-MAN alpha13a C2 C3 O3 +C1
+BMA-MAN alpha13b C3 O3 +C1 +O5
+
+BMA-MAN alpha16a C4 C5 C6 O6
+BMA-MAN alpha16b C5 C6 O6 +C1
+BMA-MAN alpha16c C6 O6 +C1 +O5
+
+MAN-MAN alpha12a C1 C2 O2 +C1
+MAN-MAN alpha12b C2 O2 +C1 +O5
+
+
+

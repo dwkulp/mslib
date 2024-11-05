@@ -1,0 +1,35 @@
+# backbone, side chain and glycan degrees of freedom for N-linked glycans
+
+ASX    phi    -C N CA C
+ASX    psi    N CA C +N
+ASX    chi1   N CA CB CG
+ASX    chi2   CA CB CG ND2
+
+# Asn-NAG linkage
+ASX   chi3   CB CG ND2 C10
+ASX   chi4  CG ND2 C10 O50
+
+# Upto BMA
+ASX   chi5  C30 C40 O40 C11
+ASX   chi6  C40 O40 C11 O51
+ASX   chi7  C31 C41 O41 C14
+ASX   chi8  C41 O41 C14 O54
+
+# Branch 1
+ASX chi9 C24 C34 O34 C15
+ASX chi10 C34 O34 C15 O55
+ASX chi11 C15 C25 O25 C18
+ASX chi12  C25 O25 C18 O58
+ASX chi13 C18 C28 O28 C19
+ASX chi14 C28 O28 C19 O59
+
+# Branch 2
+ASX chi15 C44 C54 C64 O64
+ASX chi16 C54 C64 O64 C16
+ASX chi17 C64 O64 C16 O56
+ASX chi18 C46 C56 C66 O66
+ASX chi19 C56 C66 O66 C12
+ASX chi20 C66 O66 C12 O52
+ASX chi21 C12 C22 O22 C13
+ASX chi22 C22 O22 C13 O53
+

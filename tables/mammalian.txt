@@ -1,0 +1,84 @@
+#Codon AA Fraction Frac.Thousand
+TTT Phe 0.45 16.9 
+TTC Phe 0.55 20.4 
+TTA Leu 0.07  7.2 
+TTG Leu 0.13 12.6 
+
+CTT Leu 0.13 12.8 
+CTC Leu 0.20 19.4 
+CTA Leu 0.07  6.9 
+CTG Leu 0.41 40.3 
+
+ATT Ile 0.36 15.7 
+ATC Ile 0.48 21.4 
+ATA Ile 0.16  7.1 
+ATG Met 1.00 22.3 
+
+GTT Val 0.18 10.9 
+GTC Val 0.24 14.6 
+GTA Val 0.11  7.0 
+GTG Val 0.47 28.9 
+
+
+TCT Ser 0.18 14.6 
+TCC Ser 0.22 17.4 
+TCA Ser 0.15 11.7 
+TCG Ser 0.06  4.5 
+                         
+CCT Pro 0.28 17.3 
+CCC Pro 0.33 20.0 
+CCA Pro 0.27 16.7 
+CCG Pro 0.11  7.0 
+                         
+ACT Thr 0.24 12.8 
+ACC Thr 0.36 19.2 
+ACA Thr 0.28 14.8 
+ACG Thr 0.12  6.2 
+                         
+GCT Ala 0.26 18.6 
+GCC Ala 0.40 28.5 
+GCA Ala 0.23 16.0 
+GCG Ala 0.11  7.6 
+
+
+TAT Tyr 0.43 12.0 
+TAC Tyr 0.57 15.6 
+TAA Stop 0.28  0.7 
+TAG Stop 0.20  0.5 
+                         
+CAT His 0.41 10.4 
+CAC His 0.59 14.9 
+CAA Gln 0.25 11.8 
+CAG Gln 0.75 34.6 
+                         
+AAT Asn 0.46 16.7 
+AAC Asn 0.54 19.5 
+AAA Lys 0.42 24.0 
+AAG Lys 0.58 32.9 
+                         
+GAT Asp 0.46 22.3 
+GAC Asp 0.54 26.0 
+GAA Glu 0.42 29.0 
+GAG Glu 0.58 40.8 
+
+
+
+TGT Cys 0.45  9.9 
+TGC Cys 0.55 12.2 
+TGA Stop 0.52  1.3 
+TGG Trp 1.00 12.8 
+                       
+CGT Arg 0.08  4.7 
+CGC Arg 0.19 10.9 
+CGA Arg 0.11  6.3 
+CGG Arg 0.21 11.9 
+                       
+AGT Ser 0.15 11.9 
+AGC Ser 0.24 19.4 
+AGA Arg 0.20 11.5 
+AGG Arg 0.20 11.4 
+                       
+GGT Gly 0.16 10.8 
+GGC Gly 0.34 22.8 
+GGA Gly 0.25 16.3 
+GGG Gly 0.25 16.4 

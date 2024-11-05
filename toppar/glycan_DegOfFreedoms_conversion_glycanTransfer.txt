@@ -1,0 +1,39 @@
+# backbone, side chain and glycan degrees of freedom for N-linked glycans
+
+ASN    phi    -C N CA C
+ASN    psi    N CA C +N
+ASN    chi1   N CA CB CG
+ASN    chi2   CA CB CG ND2
+
+ASN-NAG   nlink1  CB CG ND2 +C1          
+ASN-NAG   nlink2  CG ND2 +C1 +OR1
+
+NAG-NAG   beta14a  C3 C4 OR2 +C1
+NAG-NAG   beta14b  C4 OR2 +C1 +OR1
+
+NAG-BMA beta14a C3 C4 OR2 +C1
+NAG-BMA beta14b C4 OR2 +C1 +OR
+
+BMA-MAN alpha13a C2 C3 OW3 +C1
+BMA-MAN alpha13b C3 OW3 +C1 +OR
+
+BMA-MAN alpha16a C4 C5 C6 OW6
+BMA-MAN alpha16b C5 C6 OW6 +C1
+BMA-MAN alpha16c C6 OW6 +C1 +OR
+
+MAN-MAN alpha13a C2 C3 OW3 +C1
+MAN-MAN alpha13b C3 OW3 +C1 +OR
+
+MAN-MAN alpha16a C4 C5 C6 OW6
+MAN-MAN alpha16b C5 C6 OW6 +C1
+MAN-MAN alpha16c C6 OW6 +C1 +OR
+
+#MAN-MAN alpha12a C1 C2 OR +C1
+#MAN-MAN alpha12b C2 OR +C1 +OR
+
+# Fix for OW between C2 and +C1, rename as OW6 for now. 8/18/14 
+MAN-MAN alpha12a C1 C2 OW6 +C1
+MAN-MAN alpha12b C2 OW6 +C1 +OR
+
+
+
