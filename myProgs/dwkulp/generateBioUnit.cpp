@@ -44,6 +44,7 @@ int main(int argc, char *argv[]) {
 
   // For each matrix (or model/unit)
   for (uint m = 0; m < bioUnitRotations.size();m++){
+    MSLOUT.stream()<< "Model "<<m<<endl;
 
     // Rotate
     tr.rotate(sys.getAtomPointers(),*bioUnitRotations[m]);
