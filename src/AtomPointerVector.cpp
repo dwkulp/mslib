@@ -164,7 +164,19 @@ CartesianPoint& AtomPointerVector::getGeometricCenter(unsigned int _stamp) {
 }
 
 
+int AtomPointerVector::clashCheck(AtomPointerVector &_av, double _dist2_tol){
 
+  int total_clashes=0;
+  for (uint i = 0; i < (*this).size();i++){
+    for (uint j = 0; j < _av.size();j++){
+      double dist2 = (*this)(i).distance2(_av(j));
+      if (dist2 < _dist2_tol){
+	total_clashes++;
+      }
+    }
+  }
+  return (total_clashes);
+}
 double AtomPointerVector::rmsd(const AtomPointerVector &_av) const {
 
 	// Definitions

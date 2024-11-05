@@ -87,6 +87,7 @@ class AtomPointerVector : public std::vector<Atom *> {
 
 		double rmsd(const AtomPointerVector &_av) const;
 
+                int clashCheck(AtomPointerVector &_av, double _dist2_tol=9);
 		// Get the minimum or maximum number of alt coordinates for over all atoms
 		int getMinAltConf();
 		int getMaxAltConf();
