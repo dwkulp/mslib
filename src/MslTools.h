@@ -177,6 +177,7 @@ namespace MSL{
 	bool readTextFile(std::vector<std::string> & _container, const std::string & _filename);
 
 	bool fileExists(std::string _filename);
+	bool directoryExists(std::string _filename);
 
 	std::string getMSLversion();
 
@@ -294,9 +295,13 @@ namespace MSL{
 	std::vector<double> getRGB(std::vector<double> &_startRGB, std::vector <double> &_endRGB, double _minValue, double _maxValue, double _value);
 	void rgb2hsv(std::vector<double> &_rgb, std::vector<double> &_hsv);
 	void hsv2rgb(std::vector<double> &_hsv, std::vector<double> &_rgb);
-	
+
+
+	std::string getBaseMSLDirectory();
+
     }
 };
+
 
 // inlined functions
 

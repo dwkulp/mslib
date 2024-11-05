@@ -31,6 +31,8 @@ You should have received a copy of the GNU Lesser General Public
 #include "MslTools.h"
 #include <numeric>    //inner_product
 #include <functional> //plus, equal_to, not2
+#include <cstdlib>
+#include <iostream>
 
 using namespace MSL;
 using namespace std;
@@ -587,8 +589,19 @@ bool MslTools::readTextFile(vector<string> & _container, const string & _filenam
 }
 
 bool MslTools::fileExists(string _filename){
-  ifstream afile(_filename.c_str());
-  return afile.fail();
+  // This way is broken GCC 9.2.0
+  //ifstream afile(_filename.c_str());
+  //return afile.fail();
+  return (access(_filename.c_str(), F_OK) != -1);
+}
+
+// a function that tests if a directory exists
+bool MslTools::directoryExists(std::string _dir) {
+	struct stat info;
+	if (stat(_dir.c_str(), &info) != 0) {
+		return false;
+	}
+	return (info.st_mode & S_IFDIR);
 }
 
 string MslTools::pathRoot(string _path) {
@@ -1847,3 +1860,14 @@ vector<double> MslTools::getBoltzmannProbabilities(double _temp, vector<double>&
 	}
 	return probs;
 }
+
+std::string MslTools::getBaseMSLDirectory() {
+	const char* mslEnv = std::getenv("MSL_DIR");
+	if (mslEnv == nullptr) {
+		std::cerr << "Error: MSL_ENV environment variable is not set." << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
+	return std::string(mslEnv);
+}
+
+
