@@ -720,7 +720,8 @@ string Line::toString() {
 		}
 
 		// Cylinder +/- axisLength Angstroms from center , in approriate direction
-		ss << name <<"Direction = [ CYLINDER, "<<center[0] - axisLength*direction[0]<<","<<center[1]- axisLength*direction[1]<<","<<center[2]- axisLength*direction[2]<<","<<(center[0]+axisLength*direction[0])<<","<<(center[1]+axisLength*direction[1])<<","<<(center[2]+axisLength*direction[2])<< ","<<axisWidth<<", "<<color[0]<<","<<color[1]<<","<<color[2]<<","<<color[3]<<","<<color[4]<<","<<color[5]<<" ]"<<endl;
+		//		ss << name <<"Direction = [ CYLINDER, "<<center[0] - axisLength*direction[0]<<","<<center[1]- axisLength*direction[1]<<","<<center[2]- axisLength*direction[2]<<","<<(center[0]+axisLength*direction[0])<<","<<(center[1]+axisLength*direction[1])<<","<<(center[2]+axisLength*direction[2])<< ","<<axisWidth<<", "<<color[0]<<","<<color[1]<<","<<color[2]<<","<<color[3]<<","<<color[4]<<","<<color[5]<<" ]"<<endl;
+		ss << name <<"Direction = [ CYLINDER, "<<center[0]<<","<<center[1]<<","<<center[2]<<","<<(center[0]+axisLength*direction[0])<<","<<(center[1]+axisLength*direction[1])<<","<<(center[2]+axisLength*direction[2])<< ","<<axisWidth<<", "<<color[0]<<","<<color[1]<<","<<color[2]<<","<<color[3]<<","<<color[4]<<","<<color[5]<<" ]"<<endl;
 		ss << "cmd.load_cgo("<<name<<"Direction,'"<<name<<"Direction');"<<endl;
 
 
