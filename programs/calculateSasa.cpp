@@ -37,6 +37,7 @@ You should have received a copy of the GNU Lesser General Public
 #include "release.h"
 #include "OptionParser.h"
 #include "AtomSelection.h"
+#include "PyMolVisualization.h"
 
 using namespace std;
 
@@ -82,6 +83,8 @@ struct Options {
 	string outputFile; // do not print the header output lines
 	int sphereDensity; // number of points in the surface sphere
 	bool reportByResidue; // if false it reports by atom
+        bool writeNormSasa; // 
+        double normSasaCutoff; // 
 	bool ignoreWaters; // ignore the water molecules when calculating SASA
 	//string outputdir;  // the directory with the output for the run
 	string configfile;  // name of the configuration file
@@ -164,6 +167,7 @@ int main(int argc, char* argv[]) {
 	defaults.reportByResidue = false;
 	defaults.ignoreWaters = true;
 	defaults.selection = "";
+	defaults.normSasaCutoff = 0.3;
 	/******************************************************************************
 	 *                             === OPTION PARSING ===
 	 *
@@ -256,15 +260,35 @@ int main(int argc, char* argv[]) {
 		b.setTempFactorWithSasa(true);
 	}
 	b.calcSasa();
+
+	PyMolVisualization pymol;
+	stringstream exposed_str;
+	stringstream buried_str;
+	exposed_str << "resi ";
+	buried_str << "resi ";
 	string output;
 	int totalHydrophobics = 0;
 	int buriedHydrophobics = 0;
+	map<string,double>::iterator mapIt;
 	if (opt.reportByResidue) {
 		output = b.getSasaTable(false);
 		if (opt.writePdb) {
 			for (AtomPointerVector::iterator k=atoms.begin(); k!=atoms.end();k++) {
-				// set the residue sasa in the b-factor
-				(*k)->setTempFactor((*k)->getParentResidue()->getSasa());
+
+				// set the residue sasa in the b-factor or normalized sasa..
+			        double nSasa = 0;
+				mapIt = refSasa.find(MslTools::getOneLetterCode((*k)->getResidueName()));
+				if (mapIt == refSasa.end()){
+				  nSasa = 1;
+				} else {
+				  nSasa = ((*k)->getParentResidue()->getSasa() / refSasa[MslTools::getOneLetterCode((*k)->getResidueName())]);
+				}
+			        if (opt.writeNormSasa){
+				  (*k)->setTempFactor(nSasa);
+				} else {
+				  (*k)->setTempFactor((*k)->getParentResidue()->getSasa());
+				}
+
 				if ((*k)->getName() == "CA"){
 
 				  if ((*k)->getResidueName() == "ALA" ||
@@ -283,12 +307,29 @@ int main(int argc, char* argv[]) {
 				    }
 				  }
 
-
-				  cout << (*k)->getParentResidue()->getIdentityId() << ((*k)->getParentResidue()->getSasa() / refSasa[MslTools::getOneLetterCode((*k)->getResidueName())])<<endl;
+				  if (nSasa > opt.normSasaCutoff){
+				    exposed_str << (*k)->getParentResidue()->getResidueNumber()<<"+";
+				  } else {
+				    buried_str << (*k)->getParentResidue()->getResidueNumber()<<"+";
+				  }
+				  //cout << (*k)->getParentResidue()->getIdentityId() << ", "<< ((*k)->getParentResidue()->getSasa() / refSasa[MslTools::getOneLetterCode((*k)->getResidueName())])<<endl;
 				}
 			}
 			cout << "Buried hydrophbic percent: "<<buriedHydrophobics/totalHydrophobics<<endl;
+
+			string selname = "exposed";
+			string sel = exposed_str.str();
+			pymol.createSelection(selname,sel);
+
+			selname = "buried";
+			sel = buried_str.str();
+			pymol.createSelection(selname,sel);
+
+			cout << pymol.toString()<<endl;
+
 		}
+
+
 	} else {
 		output = b.getSasaTable();
 	}
@@ -349,6 +390,8 @@ Options parseOptions(int _argc, char * _argv[], Options defaults) {
 	opt.allowed.push_back("sphereDensity");
 	opt.allowed.push_back("outputPdb");
 	opt.allowed.push_back("reportByResidue");
+	opt.allowed.push_back("writeNormSasa");
+	opt.allowed.push_back("normSasaCutoff");
 	opt.allowed.push_back("ignoreWaters");
 	opt.allowed.push_back("outputFile");
 	opt.allowed.push_back("selection");
@@ -455,6 +498,11 @@ Options parseOptions(int _argc, char * _argv[], Options defaults) {
 		opt.probeRadius = defaults.probeRadius;
 	}
 
+	opt.normSasaCutoff = OP.getDouble("normSasaCutoff");
+	if (OP.fail()) {
+	  opt.normSasaCutoff = defaults.normSasaCutoff;
+	}
+
 	opt.sphereDensity = OP.getInt("sphereDensity");
 	if (OP.fail()) {
 		opt.sphereDensity = defaults.sphereDensity;
@@ -465,6 +513,10 @@ Options parseOptions(int _argc, char * _argv[], Options defaults) {
 	opt.reportByResidue = OP.getBool("reportByResidue");
 	if (OP.fail()) {
 		opt.reportByResidue = defaults.reportByResidue;
+	}
+	opt.writeNormSasa = OP.getBool("writeNormSasa");
+	if (OP.fail()){
+	  opt.writeNormSasa = false;
 	}
 
 	opt.ignoreWaters = OP.getBool("ignoreWaters");
