@@ -18,22 +18,23 @@ struct Options {
 		optional.push_back("alignAtoms");
 		optional.push_back("includeAllNeighbors");
 		optional.push_back("neighborDist");
+		optional.push_back("pdbPath");
 
 	}
 
-	// Storage for the vales of each optional
+	// Storage for the values of each optional
 	string list;
 	vector<string> residueType;
-        string alignAtoms;
+	string alignAtoms;
 	bool separateByResidueType;
-        bool includeAllNeighbors;
+	bool includeAllNeighbors;
 	bool debug;
-        double neighbor_dist;
+	double neighbor_dist;
+	string pdbPath;
 
 	// Storage for different types of options
 	vector<string> required;
 	vector<string> optional;
-
 
 };
 
