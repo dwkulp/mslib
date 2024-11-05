@@ -9,19 +9,21 @@ struct Options {
 	Options(){
 
 		// Input residues
-		required.push_back("pdblist");
+		required.push_back("pdb1");
+		required.push_back("pdb2");
 		
 		// Selection
-		required.push_back("sel");
+		required.push_back("sel1");
+		required.push_back("sel2");
 
-		optional.push_back("debug");
 
 	}
 
 	// Storage for the vales of each optional
-	string pdblist;
-	string sel;	
-	bool debug;
+        string pdb1;
+        string pdb2;
+	string sel1;	
+	string sel2;	
 
 	// Storage for different types of options
 	vector<string> required;
