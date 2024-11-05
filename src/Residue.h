@@ -135,6 +135,7 @@ class Residue : public Selectable<Residue> {
 
 		// By default we look for ANY atom in other residue ( meaning _atomInOtherResidue is equal to "")
 		std::vector<int> findNeighbors(double _distance, std::string _atomInThisResidue, std::string _atomInOtherResidue="");
+  		bool isNeighbor(double _distance, Residue &_anotherRes);
 
 		void findNeighborsAllConformations(double _distance,std::string _atomInThisResidue, std::string _atomInOtherResidue, std::vector<int> & _resnums, std::vector<int> & _altConformations);
 

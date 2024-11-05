@@ -485,6 +485,7 @@ unsigned int Residue::getIdentityIndex() {
 	}
 }
 
+
 vector<int> Residue::findNeighbors(double _distance){
 
 	System *p = getParentSystem();
@@ -512,6 +513,18 @@ vector<int> Residue::findNeighbors(double _distance){
 	}
 
 	return result;
+}
+
+bool Residue::isNeighbor(double _distance, Residue &_anotherRes){
+
+  for (uint i = 0 ; i < this->atomSize();i++){
+    for (uint j = 0; j < _anotherRes.atomSize();j++){
+      if (this->getAtom(i).distance(_anotherRes.getAtom(j)) < _distance){
+	return true;
+      }
+    }
+  }
+  return false;
 }
 
 vector<int> Residue::findNeighbors(double _distance,string _atomInThisResidue, string _atomInOtherResidue){
