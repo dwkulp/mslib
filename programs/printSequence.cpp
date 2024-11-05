@@ -43,7 +43,7 @@ int main(int argc, char *argv[]) {
 	Options opt = setupOptions(argc, argv);
 
 	System sys;
-	sys.readPdb(opt.pdb);
+	sys.readStructureFile(opt.pdb);// could be PDB or CIF
 	if (opt.fasta)
 	  fprintf(stdout, ">%s\n",MslTools::getFileName(opt.pdb).c_str());
 	for (uint c = 0; c < sys.chainSize();c++){
