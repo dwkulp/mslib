@@ -8,6 +8,7 @@
 #include "PDBWriter.h"
 #include "AtomContainer.h"
 #include "Transforms.h"
+#include "Timer.h"
 
 #include "MslOut.h"
 #include "findDisulfides.h"
@@ -23,7 +24,8 @@ using namespace MslTools;
 // MslOut 
 static MslOut MSLOUT("findDisulfides");
 
-void readDisulfPdb(string _pdbfile,vector<pair<AtomContainer *, AtomContainer *> > &_container);
+//void readDisulfPdb(string _pdbfile,vector<pair<AtomContainer *, AtomContainer *> > &_container);
+void readDisulfPdb(string _pdbfile,vector<pair<AtomContainer *, AtomContainer *> > &_container, bool _binary);
 
 int main(int argc, char *argv[]) {
 
@@ -33,10 +35,12 @@ int main(int argc, char *argv[]) {
     System sys;
     sys.readPdb(opt.pdb);
 
+    Timer t;
+    double start = t.getWallTime();
     vector<pair<AtomContainer *, AtomContainer *> > disulfs;
-    readDisulfPdb(opt.disulfPdb,disulfs);
+    readDisulfPdb(opt.disulfPdb,disulfs,opt.binaryDB);
+    MSLOUT.stream() << "Done reading disulfide database: "<<disulfs.size()<<" took "<<(t.getWallTime() - start)<<" seconds."<<endl;
 
-    MSLOUT.stream() << "Done reading disulfide database: "<<disulfs.size()<<endl;
 
     // Flush the stdout buffer
     fflush(stdout);
@@ -44,7 +48,11 @@ int main(int argc, char *argv[]) {
     PDBWriter pout;
     int cys_index = 1;
 
-
+    ofstream fastaFile;
+    if (opt.fasta) {
+      fastaFile.open(MslTools::stringf("DS_%s.fasta", MslTools::getFileName(opt.pdb).c_str()));
+    }
+	  
     // Search all pairs of residues
     if (opt.specific_positions.size() == 0){
 
@@ -247,8 +255,6 @@ int main(int argc, char *argv[]) {
 	    }
 
 	    if (rmsd1 < lowestRMSD){
-
-
 	      lowestRMSD = rmsd1;
 	      bestDisulfide.first  = disulfs[d].first->getAtomPointers();
 	      bestDisulfide.second = disulfs[d].second->getAtomPointers();
@@ -344,6 +350,24 @@ int main(int argc, char *argv[]) {
 		       cb2_sg2_sg1,
 		       cb1_sg1_sg2_cb2,
 		       nativeDisulfFlag.c_str());
+
+	if (opt.fasta){
+
+	  fastaFile << MslTools::stringf(">%s%s_DS_%04d\n",MslTools::getFileName(opt.pdb).c_str(),opt.appendName.c_str(), i);
+	  for (uint c = 0; c < sys.chainSize();c++){
+	    for (uint r = 0; r < sys.getChain(c).positionSize();r++){
+	      Residue &res = sys.getChain(c).getResidue(r);
+	      string aa = MslTools::getOneLetterCode(res.getResidueName());
+	      
+	      if (res.getPositionId() == sys.getPosition(opt.specific_positions[i]).getPositionId() || res.getPositionId() == sys.getPosition(opt.specific_positions[i+1]).getPositionId()) {
+		aa = "C";
+	      }
+	      if (aa != "X")
+		fastaFile << MslTools::stringf("%1s",aa.c_str());
+	    }
+	  }
+	  fastaFile << endl;
+	  
       }
 
       // Make model of lowest.
@@ -387,12 +411,17 @@ int main(int argc, char *argv[]) {
 	}
 
       }
+      
+      }
 
       // Flush the stdout buffer
       fflush(stdout);
-
+      
     }
-
+      
+    if (opt.fasta) {
+      fastaFile.close();
+    }
     MSLOUT.stream() << "Done."<<endl;
 }
 
@@ -447,12 +476,23 @@ Options setupOptions(int theArgc, char * theArgv[]){
     if (OP.fail()){
       opt.only_inter_chain = false;
     }
-
+    opt.fasta = OP.getBool("fasta");
+    opt.appendName = OP.getString("appendName");
+    if (OP.fail()){
+      opt.appendName="";
+    }
+      
+    opt.binaryDB = OP.getBool("binaryDB");
+    if (OP.fail()){
+      opt.binaryDB = false;
+    }
     return opt;
 }
 
-void readDisulfPdb(string _pdbfile,vector<pair<AtomContainer *, AtomContainer *> > &_container){
+void readDisulfPdb(string _pdbfile,vector<pair<AtomContainer *, AtomContainer *> > &_container, bool _binary){
   
+
+     if (!_binary){
 
 	ifstream fs;
 	fs.open(_pdbfile.c_str());
@@ -499,6 +539,7 @@ void readDisulfPdb(string _pdbfile,vector<pair<AtomContainer *, AtomContainer *>
 		      a.setCoor(it->D_X,it->D_Y, it->D_Z);
 		      a.setElement(it->D_ELEMENT_SYMBOL);
 		      a.setTempFactor(it->D_TEMP_FACT);
+		      a.setSegID(it->D_SEG_ID);
 
 		      atoms->addAtom(a);
 		    }
@@ -528,7 +569,132 @@ void readDisulfPdb(string _pdbfile,vector<pair<AtomContainer *, AtomContainer *>
 
 
 	}
+     } else {
+
+       Timer t;
+       double start = t.getWallTime();
+
+       // READ A BINARY FILE
+       AtomPointerVector ats;
+       ats.load_checkpoint(_pdbfile);
+       cout << "LOADED CHECKPOINT: "<<(t.getWallTime() - start)<<endl;
+       fflush(stdout);
+
+       AtomContainer *currentResidueAtoms = new AtomContainer();
+       string currentResidue = "";
+       int cysPair = 0;
+       for (uint i = 0; i < ats.size();i++){
+	 
+	 
+	 stringstream resDescription;
+	 resDescription << ats(i).getPositionId();
+		  
+	 // New residue means its time to decide which atoms will get added to "atoms"
+	 if (currentResidue != "" && currentResidue != resDescription.str()){
+	   
+	   // Add atoms to pair.first
+	   if (cysPair == 0){
+
+	     _container.push_back(pair<AtomContainer *, AtomContainer *>(NULL,NULL));
+	     _container.back().first = currentResidueAtoms;
+	     cysPair++;
+	     // Add atoms to pair.second
+	   } else if (cysPair == 1){
+	     _container.back().second = currentResidueAtoms;
+	     //MSLOUT.fprintf(stdout,"Added new disulfide [ %10d ]\n", _container.size());
+	     cysPair = 0;
+	   } 	   
+
+	   currentResidueAtoms = new AtomContainer();
+	 } // END CURRENT RESIDUE
+
+	 currentResidueAtoms->addAtom(ats(i));
+	 currentResidue = resDescription.str();
 
 
+       } // For i in ats
+
+       ats.deletePointers();
+
+     }
 
 }
+
+//void readDisulfPdb(string _pdbfile,vector<pair<AtomContainer *, AtomContainer *> > &_container){
+//  
+//
+//	ifstream fs;
+//	fs.open(_pdbfile.c_str());
+//	if (fs.fail()) {
+//	  return;
+//	}
+//
+//	string currentResidue = "";
+//	vector<PDBFormat::AtomData> currentResidueAtoms;
+//	int cysPair  = 0;
+//	while (true) {
+//		string line;
+//		getline(fs,line);
+//
+//		if (fs.fail()) {
+//			// no more lines to read from file, quit the while loop
+//			break;
+//		}
+//		string header = "";
+//		if (line.size() >= PDBFormat::S_RECORD_NAME + PDBFormat::L_RECORD_NAME) {
+//		  header 	= line.substr(PDBFormat::S_RECORD_NAME, PDBFormat::L_RECORD_NAME);
+//		}
+//
+//		if (header == "ATOM  " || header == "HETATM"){
+//		  PDBFormat::AtomData atom = PDBFormat::parseAtomLine(line,true);
+//		  
+//		  // Residue description string
+//		  stringstream resDescription;
+//		  resDescription << atom.D_CHAIN_ID <<":"<<atom.D_RES_NAME<<":"<<atom.D_RES_SEQ<<":"<<atom.D_I_CODE;
+//		  
+//		  // New residue means its time to decide which atoms will get added to "atoms"
+//		  if (currentResidue != "" && currentResidue != resDescription.str()){
+//
+//		    AtomContainer *atoms = new AtomContainer();
+//		    vector<PDBFormat::AtomData>::iterator it;
+//		    for (it = currentResidueAtoms.begin();it != currentResidueAtoms.end();it++){
+//		      Atom a;
+//		      // atom name, residue name, residue icode, chain id, coor, element
+//		      a.setName(it->D_ATOM_NAME);
+//		      a.setResidueName(it->D_RES_NAME);
+//		      a.setResidueIcode(it->D_I_CODE);
+//		      a.setResidueNumber(it->D_RES_SEQ);
+//		      a.setChainId(it->D_CHAIN_ID);
+//		      a.setCoor(it->D_X,it->D_Y, it->D_Z);
+//		      a.setElement(it->D_ELEMENT_SYMBOL);
+//		      a.setTempFactor(it->D_TEMP_FACT);
+//
+//		      atoms->addAtom(a);
+//		    }
+//
+//		    // Add atoms to pair.first
+//		    if (cysPair == 0){
+//
+//		      _container.push_back(pair<AtomContainer *, AtomContainer *>(NULL,NULL));
+//		      _container.back().first = atoms;
+//		      cysPair++;
+//		      // Add atoms to pair.second
+//		    } else if (cysPair == 1){
+//		      _container.back().second = atoms;
+//		      //MSLOUT.fprintf(stdout,"Added new disulfide [ %10d ]\n", _container.size());
+//		      cysPair = 0;
+//		    } 
+//
+//
+//		    currentResidueAtoms.clear();
+//		  } // END NEW RESIDUE
+//
+//		  currentResidueAtoms.push_back(atom);
+//		  currentResidue = resDescription.str();
+//
+//		} // ATOM FIELD
+//
+//
+//
+//	}
+//}

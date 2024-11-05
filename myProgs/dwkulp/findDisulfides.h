@@ -15,6 +15,10 @@ struct Options {
 		optional.push_back("writeOutAll");
 		optional.push_back("skip_local_disulfides");
 		optional.push_back("only_inter_chain");
+		optional.push_back("fasta");
+		optional.push_back("appendName");
+		optional.push_back("binaryDB");
+		
 
 	}
 
@@ -29,6 +33,9 @@ struct Options {
         bool writeOutAll;
         int skip_local_disulfides;
         bool only_inter_chain;
+        bool fasta;
+        string appendName;
+        bool binaryDB;
         vector<string> specific_positions;
 
 	vector<string> required;
