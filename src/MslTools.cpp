@@ -488,26 +488,35 @@ vector<string> MslTools::removeEmptyLines(const vector<string> & _input) {
 
 string MslTools::getFileName(string fullpath){
 
-  string name = fullpath;
+	string name = fullpath;
+	
+	// Check if fullpath only has a filename
+	/*
+	if (fullpath.find("/") == string::npos) {
+		return name;
+	}
+	*/
+	
+	// Assume linux paths '/' , sorry windows users!
+	vector<string> paths = tokenize(name, "/");
 
-  // Assume linux paths '/' , sorry windows users!
-  vector<string> paths = tokenize(name, "/");
+	if (paths.size() > 0){
+		name = paths[paths.size()-1];
+	}
+	
+	// If no extension, return the name
+	if (name.find(".") == string::npos) {
+		return name;
+	}
+	
+	size_t pos = name.find_last_of(".");
+	if (pos == std::string::npos || pos == 0) {
+		return name;
+	}
+	
+	name.erase(pos);
 
-
-  if (paths.size() > 0){
-    name = paths[paths.size()-1];
-  }
-
-  int cut;
-  if (name.find_last_of(".") > 1000 || name.find_last_of(".") <= 0){
-	  cut = name.length();
-  } else {
-	  cut = name.length() - name.find_last_of(".");
-  }
-
-  name.erase(name.length() - cut);
-
-  return name;
+	return name;
 }
 
 
@@ -583,6 +592,129 @@ bool MslTools::readTextFile(vector<string> & _container, const string & _filenam
 
 	}
 	fs.close();
+
+	return true;
+
+}
+
+bool MslTools::getPdbsFromFile(string _filename, vector<string> &_pdbs, string _pdbPath, string _cifPath) {
+	vector<string> tmp;
+	return getPdbsFromFile(_filename, _pdbs, tmp, _pdbPath, _cifPath, false);
+}	
+bool MslTools::getPdbsFromFile(string _filename, vector<string> &_pdbs, vector<string> &_chainIds, string _pdbPath, string _cifPath, bool _parseChains) {
+
+	ifstream fs;
+
+	fs.open(_filename.c_str());
+	if (fs.fail()){
+		cerr<<"Cannot open file "<<_filename<<endl;
+		exit(1);
+	}
+
+	bool isFirstValidLine = true;
+	bool isPDBFile = false;
+
+	while (true) {
+		string line;
+		getline(fs, line);
+
+		if (fs.fail()) {
+			// no more lines to read, quit the while.
+			break;
+		}
+		
+		// Skip if blank line or first char is a '#' 
+		if (line == "" || line[0] == '#'){
+			continue;
+		}
+	
+		// Check if the line is a PDB file or a cull-PDB type file (PDBidCHAINid) for the first non-blank line
+		if (isFirstValidLine) {
+			if (line.size() != 8 || line.substr(line.size() - 4) != ".pdb") {
+				isPDBFile = false;
+				cout << "Assuming the file type is PDB chain format (PDBidCHAINid)." << endl;
+			} else {
+				isPDBFile = true;
+				cout << "Assuming the file type is PDB file." << endl;
+			}
+			isFirstValidLine = false;
+		}
+
+		// Deal with non-pdb file list
+		if (!isPDBFile) {
+
+			// First check that pdbPath exists
+			if (!MslTools::directoryExists(_pdbPath)) {
+				cerr << "PDB path does not exist: " << _pdbPath << endl;
+			}
+
+			// Check if the file exists in the pdbPath
+			string prefix = line.substr(0, 4);
+			transform(prefix.begin(), prefix.end(), prefix.begin(), ::tolower);
+			string filename     = _pdbPath + "/" + prefix.substr(1, 2) + "/" + prefix + ".pdb";
+			string cif_filename = _cifPath + "/" + prefix.substr(1, 2)  + "/" + prefix + ".cif";
+
+			// If file exists, add to pdbs and chain ids
+			if (MslTools::fileExists(filename)) {
+				
+				_pdbs.push_back(filename);
+
+				if (_parseChains) {
+					// get chainid from line character 5 until a whitespace
+					string chainId = line.substr(4, line.find(" ", 4) - 4);
+					_chainIds.push_back(chainId);
+				}
+
+			} else {
+
+				// Try to check if the file exists in the cifPath
+				bool tryRemote = true;
+				if (MslTools::directoryExists(_cifPath)) {
+
+					if (MslTools::fileExists(cif_filename)){
+						_pdbs.push_back(cif_filename);
+						if (_parseChains) {
+							string chainId = line.substr(4, line.find(" ", 4) - 4);
+							_chainIds.push_back(chainId);
+						}
+		
+						tryRemote = false;
+					} else {
+						cerr << "Cannot find PDB file: " << filename << " or CIF file: " << cif_filename << " trying remote." << endl;
+					}
+
+				} else {
+					cerr << "CIF path does not exist: " << _cifPath << " trying remote." << endl;
+				}
+				
+					
+				if (tryRemote) {
+					// Get from remote server
+					stringstream ss;
+					ss << MslTools::toUpper(prefix) << ".cif";
+					string filename2 = ss.str();
+
+					string pdbUrl = "https://files.rcsb.org/download/" + filename2;
+					
+					string command = "wget -O " + filename2 + " " + pdbUrl;
+					int retVal = system(command.c_str());
+					
+					if (MslTools::fileExists(filename2)){
+						_pdbs.push_back(filename2);
+
+						if (_parseChains) {
+							string chainId = line.substr(4, line.find(" ", 4) - 4);
+							_chainIds.push_back(chainId);
+						}
+					} else {
+						cerr << "SKIPPING FILE: Cannot find get remote get file: "<<filename2<<endl;
+					}
+				}
+			}	
+		} else {
+			_pdbs.push_back(line);
+		}
+	}
 
 	return true;
 
@@ -982,6 +1114,7 @@ void MslTools::loadAAConversionTables() {
 	oneToThreeLetter["L"]   = "LEU";
 
 	threeToOneLetter["MET"] = "M";
+	threeToOneLetter["MSE"] = "M";
 	oneToThreeLetter["M"]   = "MET";
 
 	threeToOneLetter["ASN"] = "N";

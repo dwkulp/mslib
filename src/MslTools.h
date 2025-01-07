@@ -179,6 +179,12 @@ namespace MSL{
 	bool fileExists(std::string _filename);
 	bool directoryExists(std::string _filename);
 
+	// Parsing file without chain ids (e.g. 1ABC )
+	bool getPdbsFromFile(std::string _filename, std::vector<std::string> &_pdbs, std::string _pdbPath, std::string _cifPath);
+
+	// Parsing file with PDBIDCHIAINID format (e.g. 1ABCA ) note chain id CAN be more than one character, this code will handle that.
+	bool getPdbsFromFile(std::string _filename, std::vector<std::string> &_pdbs, std::vector<std::string> &_chainIds, std::string _pdbPath, std::string _cifPath, bool _parseChain=true);
+
 	std::string getMSLversion();
 
 	// RegEx Functions  (only works with compile __BOOST__ flag on, otherwise returns false immediately)
