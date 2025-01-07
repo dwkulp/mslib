@@ -65,7 +65,7 @@ ATOM   3    C C   . TYR A 1 9   ? -16.522 28.610 -20.612 1.00 43.19  ? 9   TYR A
 ATOM   4    O O   . TYR A 1 9   ? -16.008 28.900 -19.551 1.00 46.80  ? 9   TYR A O   1 
  */
 
-Atom * CIFFormat::createAtomFromAtomSiteLine(const string &_pdbAtomLine, vector<string> &_fields, bool _allowPartialRead){
+Atom * CIFFormat::createAtomFromAtomSiteLine(const string &_pdbAtomLine, vector<string> &_fields, bool _allowPartialRead, bool _useAuthFields){
   
   vector<string> toks = MslTools::tokenizeAndTrim(_pdbAtomLine," ");
 
@@ -105,10 +105,10 @@ Atom * CIFFormat::createAtomFromAtomSiteLine(const string &_pdbAtomLine, vector<
 	if (_fields[i] == "B_iso_or_equiv")                    at->setTempFactor(MslTools::toDouble(toks[i], "TempFactor is not a double"));
 
 
-	if (_fields[i] == "auth_atom_id" && _fillAuthAtomName) at->setName(toks[i]);
-	if (_fields[i] == "auth_comp_id" && _fillAuthResName)  at->setResidueName(toks[i]);
-	if (_fields[i] == "auth_asym_id" && _fillAuthChainId)  at->setChainId(toks[i]);
-	if (_fields[i] == "auth_seq_id"  && _fillAuthResNum)   at->setResidueNumber(MslTools::toInt(toks[i], "Residue Number2 is not an int"));
+	if (_fields[i] == "auth_atom_id" && (_fillAuthAtomName || _useAuthFields)) at->setName(toks[i]);
+	if (_fields[i] == "auth_comp_id" && (_fillAuthResName  || _useAuthFields)) at->setResidueName(toks[i]);
+	if (_fields[i] == "auth_asym_id" && (_fillAuthChainId  || _useAuthFields)) at->setChainId(toks[i]);
+	if (_fields[i] == "auth_seq_id"  && (_fillAuthResNum   || _useAuthFields)) at->setResidueNumber(MslTools::toInt(toks[i], "Residue Number2 is not an int"));
 	
 	// SegId is in different field.
 	

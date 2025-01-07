@@ -47,6 +47,7 @@ CIFReader::CIFReader() : Reader() {
 	(*scaleRotation)[0][0] = 1.0;
 	(*scaleRotation)[1][1] = 1.0;
 	(*scaleRotation)[2][2] = 1.0;
+	useAuthFields = true;
 }
 /**
  * With this constructor the user specifies the filename
@@ -62,6 +63,7 @@ CIFReader::CIFReader(const std::string &_filename) : Reader(_filename) {
 	(*scaleRotation)[0][0] = 1.0;
 	(*scaleRotation)[1][1] = 1.0;
 	(*scaleRotation)[2][2] = 1.0;
+	useAuthFields = true;
 }
 /**
  * A copy constructor.  All of the atoms from the given CIFReader are
@@ -77,6 +79,7 @@ CIFReader::CIFReader(const CIFReader & _reader) {
 	singleAltLocFlag = _reader.singleAltLocFlag;
 	scaleTranslation = new CartesianPoint(0.0,0.0,0.0); 
 	scaleRotation = new Matrix(3,3,0.0);
+	useAuthFields = true;
 }
 /**
  * A constructor which will read input data from a std::stringstream.
@@ -88,6 +91,7 @@ CIFReader::CIFReader(std::stringstream &_ss) : Reader(_ss)     {
 	singleAltLocFlag = false;
 	scaleTranslation = new CartesianPoint(0.0,0.0,0.0); 
 	scaleRotation = new Matrix(3,3,0.0);
+	useAuthFields = true;
 }
 
 /**
@@ -206,7 +210,7 @@ void CIFReader::processData(string &_category, vector<string> &_fields, string &
 
   if (_category == "_atom_site"){
     MSLOUT.stream() << "CREATE ATOM BUDDY!:"<<_line<<endl;
-    Atom *a = CIFFormat::createAtomFromAtomSiteLine(_line, _fields);
+	Atom *a = CIFFormat::createAtomFromAtomSiteLine(_line, _fields, useAuthFields);
     atoms.push_back(a);
   }
   

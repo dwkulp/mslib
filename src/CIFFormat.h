@@ -49,7 +49,7 @@ class CIFFormat {
   of a CIF.
 */
        public:
-                static Atom * createAtomFromAtomSiteLine(const std::string &_pdbAtomLine, std::vector<std::string> &_fields, bool _allowPartialRead=false);
+                static Atom * createAtomFromAtomSiteLine(const std::string &_pdbAtomLine, std::vector<std::string> &_fields, bool _allowPartialRead=false,bool _useAuthFields=true);
 
                 static std::string createLoopAtomSite(AtomPointerVector &_ats, bool _addHeader=true, bool _addTail=true);
                 static std::string createLoopAtomSite(AtomPointerVector &_ats, std::vector<std::string> &_fields, bool _addHeader=true, bool _addTail=true);

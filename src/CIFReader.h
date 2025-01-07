@@ -57,7 +57,7 @@ class CIFReader : public Reader {
 		// Constructors/Destructors
 		CIFReader();
 		CIFReader(const std::string &_filename);
-                CIFReader(const CIFReader & _reader);
+        CIFReader(const CIFReader & _reader);
 		CIFReader(std::stringstream &_stream);
 		~CIFReader();
 
@@ -73,6 +73,8 @@ class CIFReader : public Reader {
 
 		unsigned int getNumberOfModels() const;
 
+		// Two fields of data one is 'label' (set by PDB) and the other is 'auth' (set by author), use author by default
+		void setUseAuthFields(bool _useAuthFields) {useAuthFields = _useAuthFields;}
 
 	protected:		
 	private:
@@ -97,6 +99,7 @@ class CIFReader : public Reader {
 		std::map<std::string,double> boundingCoords;
 
 		unsigned int numberOfModels;
+		bool useAuthFields;
 
 };
 
