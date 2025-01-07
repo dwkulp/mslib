@@ -30,6 +30,7 @@ You should have received a copy of the GNU Lesser General Public
 #include "SasaCalculator.h"
 #include "AtomSelection.h"
 #include "getDeltaDistSASA.h"
+#include "Transforms.h"
 
 using namespace std;
 
@@ -101,13 +102,24 @@ int main(int argc, char *argv[]){
 		AtomPointerVector atoms1 = sel1.select(opt.referencePoint);
 		AtomPointerVector atoms2 = sel2.select(opt.referencePoint);
 
-		if (atoms1.size() == 0 || atoms2.size() == 0) {
+		if (atoms1.size() == 0 || atoms2.size() == 0 || atoms1.size() != atoms2.size()) {
 			cerr << "ERROR: referencePoint not found in one of the structures.\n";
 			exit(1111);
 		}
 
 		refPoint1 = atoms1.getGeometricCenter();
 		refPoint2 = atoms2.getGeometricCenter();
+
+		// Align sys2 to sys1 by refPoint2 to refPoint1
+		Transforms tm;
+		if (!tm.rmsdAlignment(atoms2, atoms1, sys2.getAtomPointers())) {
+			cerr << "Alignment failed!" << endl;
+			exit(1);
+		}
+
+		//double rmsd = tm.getRMSD();
+		double rmsd = atoms1.rmsd(atoms2);
+		printf("RMSD: %f\n", rmsd);
 	}
 
 
@@ -146,7 +158,12 @@ int main(int argc, char *argv[]){
 	SasaCalculator scalc2(sys2.getAtomPointers());
 	scalc2.calcSasa();
   
-  	printf("%-10s %-4s %10s %10s %10s %10s %10s %10s %10s %10s %s\n",
+	// Open outputfile
+	ofstream outFile;
+	outFile.open("dist_sasa.csv");
+
+	// print formated header to outfile
+  	outFile << MslTools::stringf("%-10s %-4s %10s %10s %10s %10s %10s %10s %10s %10s %s\n",
 					   "PosID", "Res", "Dist", "DeltaDist", "SASA1", "SASA2", "DeltaSASA", "NormSASA1", "NormSASA2", "DeltaNormSASA", "Epitope");
 	for (uint i = 0; i < sys1.positionSize(); i++) {
 		string posId = sys1.getPosition(i).getPositionId();
@@ -189,14 +206,17 @@ int main(int argc, char *argv[]){
 
 	
 
-			printf("%-10s %-4s %10.3f %10.3f %10.3f %10.3f %10.3f %10.3f %10.3f %10.3f %s\n",
+			outFile << MslTools::stringf("%-10s %-4s %10.3f %10.3f %10.3f %10.3f %10.3f %10.3f %10.3f %10.3f %s\n",
 				   posId.c_str(), pos1.getResidueName().c_str(), dist, deltaDeltaDist, sasa1, sasa2, deltaSasa, normSasa1, normSasa2, deltaNormSasa, epitopeName.c_str());
 		} else {
 			cerr << "ERROR: Position " << posId << " not found in second structure.\n";
 		}
 	}
+	outFile.close();
+
 	// Figure out which epitopes are interacting in sys1 or sys2 (note that chain 'A' is hardcoded here)
-	
+	sys1.getChains()[0]->setChainId("A");
+	sys2.getChains()[0]->setChainId("A");
 	for (const auto &epitope1 : epitopeMapBack) {
 		for (const auto &epitope2 : epitopeMapBack){
 			if (epitope1.first != epitope2.first){	
