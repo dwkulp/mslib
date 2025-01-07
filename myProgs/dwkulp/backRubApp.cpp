@@ -35,7 +35,21 @@ int main(int argc, char *argv[]) {
   sys.readPdb(opt.pdb);
 
   BackRub br;
+  vector<AtomContainer *> results = br.multiSample(sys.getChain(0), 1, sys.getChain(0).positionSize()-1, opt.numSampling, opt.numModels);
+
+  for (uint i = 0; i < results.size(); i++){
+    char name[80];
+    sprintf(name,"%s_BR%06d.pdb",MslTools::getFileName(opt.pdb).c_str(),i+1);
+    MSLOUT.stream() << "WRITING: "<<name<<endl;
+    results[i]->writePdb((string)name);
+  }
+
+  /*
   br.localSample(sys.getChain(0),1,sys.getChain(0).positionSize()-1,opt.numModels);
+
+
+
+
   int numConfs = br.getAtomPointers().getMaxAltConf();
   AtomContainer ats(br.getAtomPointers());
   string fname = MslTools::getFileName(opt.pdb);
@@ -46,7 +60,8 @@ int main(int argc, char *argv[]) {
     MSLOUT.stream() << "WRITING: "<<name<<endl;
     ats.writePdb((string)name);
   }
-  
+  */
+
 }
 
 
@@ -82,7 +97,6 @@ Options setupOptions(int theArgc, char * theArgv[]){
   }
 
 
-
   opt.pdb = OP.getString("pdb");
   if (OP.fail()){
     cerr << "ERROR 1111 pdb not specified.\n";
@@ -93,6 +107,12 @@ Options setupOptions(int theArgc, char * theArgv[]){
   if (OP.fail()){
     opt.numModels = 100;
   }
+
+  opt.numSampling = OP.getInt("numSampling");
+  if (OP.fail()){
+    opt.numSampling = 10;
+  }
+
   MSLOUT.stream() << "Options:\n"<<OP<<endl;
   return opt;
 }
