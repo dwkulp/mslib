@@ -50,21 +50,21 @@ class PDBFragments{
 		void setPdbDir(std::string _pdbdir);
 		void setBBQTable(std::string _table);
 
-                int searchForMatchingFragmentsLinear(System &_sys, string &_startRes, string &_endRes, string _regex, double _rmsdTol,int _maxFrags=-1);
+        int searchForMatchingFragmentsLinear(System &_sys, string &_startRes, string &_endRes, string _regex, double _rmsdTol,int _maxFrags=-1);
 		int searchForMatchingFragmentsStems(System &_sys, std::vector<std::string> &_stemResidues,int _numResiduesInFragment=-1,std::string _regex="",double _rmsdTol=0.5);
 		int searchForMatchingFragmentsSpots(System &_sys, std::vector<std::string> &_stemResidues,int _maxResiduesInFragment, double _rmsdTol);
 
 		// Function searches for fragments within "_searchSys" rather than the included fragDB.
 		int searchForMatchingDualFragments(System &_sys1, std::vector<std::string> &_stemResidues1,
-						   System &_sys2, std::vector<std::string> &_stemResidues2,
-						   System &_searchSys, int _loop1min, int _loop1max, int _loop2min, int _loop2max, double _distanceStem1=0.0, double _distanceStem2=0.0,
-						   double _stemRmsdTol=0.3,double _totalRmsdTol=0.6,bool _matchFirstStemOnly=false);
+		System &_sys2, std::vector<std::string> &_stemResidues2,
+		System &_searchSys, int _loop1min, int _loop1max, int _loop2min, int _loop2max, double _distanceStem1=0.0, double _distanceStem2=0.0,
+		double _stemRmsdTol=0.3,double _totalRmsdTol=0.6,bool _matchFirstStemOnly=false);
 
 		// Function searches for fragments inside fragDB.
 		int searchForMatchingDualFragments(System &_sys1, std::vector<std::string> &_stemResidues1,
-						   System &_sys2, std::vector<std::string> &_stemResidues2,
-						   int _loop1min, int _loop1max, int _loop2min, int _loop2max, double _distanceStem1=0.0, double _distanceStem2=0.0,
-						   double _stemRmsdTol=0.3,double _totalRmsdTol=0.6,bool _matchFirstStemOnly=false);
+		System &_sys2, std::vector<std::string> &_stemResidues2,
+		int _loop1min, int _loop1max, int _loop2min, int _loop2max, double _distanceStem1=0.0, double _distanceStem2=0.0,
+		double _stemRmsdTol=0.3,double _totalRmsdTol=0.6,bool _matchFirstStemOnly=false);
 
 		vector<AtomContainer *> & getAtomContainers();
 		AtomPointerVector getAtomPointers();
@@ -133,6 +133,9 @@ inline void PDBFragments::loadFragmentDatabase(){
 	if (fragDB.getName() == "allatom"){
 	  fragType = allAtoms;
 	}
+
+	// Reset the active conformation as this will reset the currentIterator for atom pointer vectors
+	fragDB.setActiveConf(0);
 
 }
 

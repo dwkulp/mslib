@@ -799,154 +799,162 @@ int PDBFragments::searchForMatchingFragmentsSpots(System &_sys, std::vector<std:
 
 int PDBFragments::searchForMatchingFragmentsLinear(System &_sys, string &_startRes, string &_endRes, string _regex, double _rmsdTol, int _maxFrags){
 
-  if (  ! ( _sys.positionExists(_startRes)  && _sys.positionExists(_endRes) ) ) {
-    cerr << "ERROR 2342 residue(s) don't exist: "<<_startRes<<" "<<_endRes<<endl;
-    return -1;
-  }
+	if (  ! ( _sys.positionExists(_startRes)  && _sys.positionExists(_endRes) ) ) {
+		cerr << "ERROR 2342 residue(s) don't exist: "<<_startRes<<" "<<_endRes<<endl;
+		return -1;
+	}
 
-
-  int numFrags = 0;
+	int numFrags = 0;
   
-  // Remove last set of results
-  lastResults.clear();
+	// Remove last set of results
+	lastResults.clear();
 
-  // Clear our set of matched sequences
-  matchedSequences.clear();
+	// Clear our set of matched sequences
+	matchedSequences.clear();
 
+	// AtomVector of CA/backbone atoms
+	int residueSeparation = _sys.getPositionIndex(_endRes) - _sys.getPositionIndex(_startRes);
+	AtomPointerVector bbAts;
+	for (uint i = _sys.getPositionIndex(_startRes); i <= _sys.getPositionIndex(_endRes); i++){
+		if (_sys.getPosition(i).atomExists("CA")){
+			bbAts.push_back(&_sys.getPosition(i).getAtom("CA"));
+		} else {
+			cerr << "Position: "<<_sys.getPosition(i).toString()<<" doesn't have a CA atom"<<endl;
+			return -1;
+		}
+	}
 
-  // AtomVector of CA/backbone atoms
-  int residueSeparation = _sys.getPositionIndex(_endRes) - _sys.getPositionIndex(_startRes);
-  AtomPointerVector bbAts;
-  for (uint i = _sys.getPositionIndex(_startRes); i <= _sys.getPositionIndex(_endRes);i++){
-    if (_sys.getPosition(i).atomExists("CA")){
-      bbAts.push_back(&_sys.getPosition(i).getAtom("CA"));
-    } else {
-      cerr << "Position: "<<_sys.getPosition(i).toString()<<" doesn't have a CA atom"<<endl;
-      return -1;
-    }
-  }
+	MSLOUT.stream() << "FragDB.size(): "<<fragDB.size()<< " "<<residueSeparation<<" ."<<_regex<<"."<<endl;
+	// Now loop over all fragments in database checking for ones of the correct size
+	int matchIndex = 0; // Index for keeping track of matches
+	Transforms tm;
+	stringstream ss;
+	for (uint i = 0 ; i < fragDB.size()-residueSeparation; i++){
+		//MSLOUT.stream() << "Fragment("<<i<<") "<<endl;
 
+		// Break if we already found enough fragments
+		if (_maxFrags != -1 && numFrags > _maxFrags){
+			break;
+		}
+	
+		// Filter by pdb/chain breaks
+		if (fragDB(i).getSegID() != fragDB(i+residueSeparation).getSegID()){
+			//MSLOUT.stream() << "PDB break: "<<fragDB(i).getSegID() << " "<<fragDB(i+residueSeparation).getSegID()<<endl;
+			continue;
+		}
+		if (fragDB(i).getChainId() != fragDB(i+residueSeparation).getChainId()){
+			//MSLOUT.stream() << "CHAIN break"<<endl;
+			continue;
+		}
 
-  MSLOUT.stream() << "FragDB.size(): "<<fragDB.size()<<endl;
-  // Now loop over all fragments in database checking for ones of the correct size
-  int matchIndex = 0; // Index for keeping track of matches
-  Transforms tm;
-  stringstream ss;
-  for (uint i = 0 ; i < fragDB.size()-residueSeparation;i++){
+		AtomContainer fragBB;
+		string matchSeq = "";
+		for (uint j = 0; j <= residueSeparation; j++){
+			fragBB.addAtom(fragDB(i+j));
+			matchSeq += MslTools::getOneLetterCode(fragDB(i+j).getResidueName());
+		}
 
-    // Break if we already found enough fragments
-    if (_maxFrags != -1 && numFrags > _maxFrags){
-      break;
-    }
-    
-    // Filter by pdb/chain breaks
-    if (fragDB(i).getSegID() != fragDB(i+residueSeparation).getSegID()){
-      continue;
-    }
-    if (fragDB(i).getChainId() != fragDB(i+residueSeparation).getChainId()){
-      continue;
-    }
+		//fragBB.saveCoor("pre");
+		if (!tm.rmsdAlignment(fragBB.getAtomPointers(), bbAts)){
+			cerr << "ERROR in alignment: "<<fragBB.size()<<" "<<bbAts.size()<<endl;
+			continue;
+		}
+		// Simple distance squared check to speed things up.
+		//MSLOUT.stream() << "Distance fragBB(0) to bbAts(0): " << fragBB(0).distance(bbAts(0))<<" fragBB:"<<fragBB(0).toString()<<" "<<fragBB(fragBB.size()-1).toString()<<endl;
+		if (fragBB(0).distance2(bbAts(0)) > 4){
+			continue;
+		}
+		//MSLOUT.stream() << "RMSD Pre"<<endl;
 
-    AtomPointerVector fragBB;
-    string matchSeq = "";
-    for (uint j = 0; j <= residueSeparation;j++){
-      fragBB.push_back(&fragDB(i+j));
-      matchSeq += MslTools::getOneLetterCode(fragDB(i+j).getResidueName());
-    }
+		double rmsd = fragBB.getAtomPointers().rmsd(bbAts);
+		//MSLOUT.stream() << "RMSD: "<<rmsd<<endl;
+		if (rmsd > _rmsdTol){
+			continue;
+		}
+		//fragBB.applySavedCoor("pre");
 
+		//MSLOUT.stream() << "RMSD Post"<<endl;
+		matchIndex++;
+	
+		if (_regex != ""){
+			if (!boost::regex_search(matchSeq.c_str(), boost::regex(_regex))){
+				MSLOUT.stream() << "RegEx NOT Matched. "<<matchSeq<<endl;
+				continue;
+			} else {
+				MSLOUT.stream() << "RegEx Matched. "<<matchSeq<<endl;
+			}
+			string key = MslTools::stringf("%06d-%s-%1s_%04d%s-%1s_%04d%s",
+										   matchIndex,
+										   fragDB(i).getSegID().c_str(),
+										   fragDB(i).getChainId().c_str(),
+										   fragDB(i).getResidueNumber(),
+										   fragDB(i).getResidueIcode().c_str(),
+										   fragBB(fragBB.size()-1).getChainId().c_str(),
+										   fragBB(fragBB.size()-1).getResidueNumber(),
+										   fragBB(fragBB.size()-1).getResidueIcode().c_str());
+			matchedSequences[key] = matchSeq;
+		}
 
-    fragBB.saveCoor("pre");
-    if (!tm.rmsdAlignment(fragBB,bbAts)){
-      cerr << "ERROR in alignment: "<<fragBB.size()<<" "<<bbAts.size()<<endl;
-      continue;
-    }
-    // Simple distance squared check to speed things up.
-    if (fragBB(0).distance2(bbAts(0)) > 4){
-      continue;
-    }
-    double rmsd = fragBB.rmsd(bbAts);
-    if (rmsd > _rmsdTol){
-      continue;
-    }
+		fprintf(stdout,"(%4s and chain %1s and resi %3d-%3d)  %8.3f \n",
+				fragDB[i]->getSegID().c_str(),
+				fragDB[i]->getChainId().c_str(),
+				fragDB[i]->getResidueNumber(),
+				fragBB(fragBB.size()-1).getResidueNumber(),
+				rmsd);
 
-    
-    matchIndex++;
-    
-   
-    if (_regex != ""){
-      if (!boost::regex_search(matchSeq.c_str(),boost::regex(_regex))){
-	MSLOUT.stream() << "RegEx NOT Matched. "<<matchSeq<<endl;
-	continue;
-      } else {
-	MSLOUT.stream() << "RegEx Matched. "<<matchSeq<<endl;
-      }
+		if (pdbDir != ""){
+			fragBB.applySavedCoor("pre");
+			Atom &at1 = fragBB(0);
+			Atom &at2 = fragBB(fragBB.size()-1);
+			string allAtomFileName = MslTools::stringf("%s/%s.pdb", pdbDir.c_str(), at1.getSegID().c_str());
 
-      string key = MslTools::stringf("%06d-%s-%1s_%04d%s-%1s_%04d%s",
-				   matchIndex,
-				   fragDB(i).getSegID().c_str(),
-				   fragDB(i).getChainId().c_str(),
-				   fragDB(i).getResidueNumber(),
-				   fragDB(i).getResidueIcode().c_str(),
-				   fragBB(fragBB.size()-1).getChainId().c_str(),
-				   fragBB(fragBB.size()-1).getResidueNumber(),
-				   fragBB(fragBB.size()-1).getResidueIcode().c_str());
-      matchedSequences[key] = matchSeq;
-    }
+			System allAtomSys;
+			allAtomSys.readPdb(allAtomFileName);
+			for (uint ats = 0; ats < allAtomSys.getAtomPointers().size(); ats++){
+				allAtomSys.getAtom(ats).setSegID("");
+			}
 
+			if (!tm.rmsdAlignment(fragBB.getAtomPointers(), bbAts, allAtomSys.getAtomPointers())){
+				cerr << "ERROR in alignment2: "<<fragBB.size()<<" "<<bbAts.size()<<endl;
+				continue;
+			}
 
-    fprintf(stdout,"(%4s and chain %1s and resi %3d-%3d)  %8.3f \n",
-	    fragDB[i]->getSegID().c_str(),
-	    fragDB[i]->getChainId().c_str(),
-	    fragDB[i]->getResidueNumber(),
-	    fragBB[fragBB.size()-1]->getResidueNumber(),
-	    rmsd);
+			lastResults.push_back(new AtomContainer());
+			if (includeFullFile){
+				lastResults.back()->addAtoms(allAtomSys.getAtomPointers());
+			} else {
+				AtomSelection sel2(allAtomSys.getAtomPointers());
+				ss.str("");
+				char tmpstr2[100];
+				sprintf(tmpstr2,"chain %1s and resi %d-%-d", at1.getChainId().c_str(), at1.getResidueNumber(), at2.getResidueNumber());
+				ss << tmpstr2;
+				AtomPointerVector allAts = sel2.select(ss.str());
+				lastResults.back()->addAtoms(allAts);
+			}
 
+		} else {
+			// Add CA only atoms..
+			//lastResults.push_back(new AtomContainer(fragBB));
 
-    if (pdbDir != ""){
-      fragBB.applySavedCoor("pre");
-      Atom &at1 = fragBB(0);
-      Atom &at2 = fragBB(fragBB.size()-1);
-      string allAtomFileName = MslTools::stringf("%s/%s.pdb",pdbDir.c_str(),at1.getSegID().c_str());
+			// For each position in bbAts add the sequence from matchedSequence[i] to a string
+			if (bbAts.size() != matchSeq.length()) {
+				cerr << "ERROR 2342 PDBFragments::searchForMatchingFragmentsLinear, bbAts.size() != matchedSeq.length()"<<endl;
+			} else {
+				for (uint x = 0; x < bbAts.size(); x++){
+					string key = MslTools::stringf("%s-%d-%s", bbAts[x]->getChainId().c_str(), bbAts[x]->getResidueNumber(), bbAts[x]->getResidueIcode().c_str());
+					//cout<< "Key: "<<key<<" "<<matchSeq.substr(x, 1)<<endl;
+					//cout << "\tadding to :"<<matchedSequences[MslTools::stringf("%s-%d-%s", bbAts[x]->getChainId().c_str(), bbAts[x]->getResidueNumber(), bbAts[x]->getResidueIcode().c_str())]<<endl;
+					matchedSequences[MslTools::stringf("%s-%d-%s", bbAts[x]->getChainId().c_str(), bbAts[x]->getResidueNumber(), bbAts[x]->getResidueIcode().c_str())] += matchSeq.substr(x, 1);
+				}
+			}    
+		}
+		
+		fragBB.removeAllAtoms();
 
+		numFrags++;
+	}
 
-      System allAtomSys;
-      allAtomSys.readPdb(allAtomFileName);
-      for (uint ats = 0; ats < allAtomSys.getAtomPointers().size();ats++){
-	allAtomSys.getAtom(ats).setSegID("");
-      }
-
-      if (!tm.rmsdAlignment(fragBB,bbAts,allAtomSys.getAtomPointers())){
-	cerr << "ERROR in alignment2: "<<fragBB.size()<<" "<<bbAts.size()<<endl;
-	continue;
-      }
-
-
-      lastResults.push_back(new AtomContainer());
-      if (includeFullFile){
-	lastResults.back()->addAtoms(allAtomSys.getAtomPointers());
-      } else {
-	AtomSelection sel2(allAtomSys.getAtomPointers());
-	ss.str("");
-	char tmpstr2[100];
-	sprintf(tmpstr2,"chain %1s and resi %d-%-d",at1.getChainId().c_str(),at1.getResidueNumber(),at2.getResidueNumber());
-	ss << tmpstr2;
-	AtomPointerVector allAts = sel2.select(ss.str());
-	lastResults.back()->addAtoms(allAts);
-      }
-
-    } else {
-
-      // Add CA only atoms..
-      lastResults.push_back(new AtomContainer());
-      lastResults.back()->addAtoms(fragDB);
-
-    }
-
-    numFrags++;
-  }
-
-
-  return numFrags;
+	return numFrags;
 }
 
 /*
