@@ -108,6 +108,8 @@ foreach $lib (keys %libs){
 
 	$fname = fileparse($libs{$lib});
 	my $ff = File::Fetch->new(uri => $libs{$lib});
+	print "Fetching $libs{$lib}, $name\n";
+	print "Directory exists: ".(-d "./$name"."_src/")."\n";
 	my $where = $ff->fetch(to => "./$name"."_src/") or die $ff->error;
 	my $fname = $ff->file;
         my $base = "";
@@ -117,7 +119,7 @@ foreach $lib (keys %libs){
   	    print "ERROR MSL_BOOST building tar.gz not name $libs{$lib},$fname,$base\n";
 	    exit(1);
 	}
-#	system("cd ./$name"."_src; tar xzvf $fname");
+	system("cd ./$name"."_src; tar xzvf $fname");
 
 
 #	system("cd ./$name"."_src/; svn co $libs{$lib}");
