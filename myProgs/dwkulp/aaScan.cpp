@@ -84,130 +84,159 @@ int main(int argc, char *argv[]) {
 	frags.loadFragmentDatabase();
 	//frags.setPdbDir(opt.pdbDir);
 	//frags.setIncludeFullFile(opt.includeFullFile);
-
+	//frags.printMe();
+	
 	vector<string> lines;
 	if (MslTools::pathExtension(opt.pdb).compare("pdb") == 0){
-	  cout << "JUST A PDB!\n";
-	  lines.push_back(opt.pdb);
+		cout << "JUST A PDB!\n";
+		lines.push_back(opt.pdb);
 	} else {
-	  cout << "PDBLIST IS: ."<<MslTools::pathExtension(opt.pdb)<<"."<<endl;
-	  MslTools::readTextFile(lines,opt.pdb);
+		cout << "PDBLIST IS: ." << MslTools::pathExtension(opt.pdb) << "." << endl;
+		MslTools::readTextFile(lines, opt.pdb);
 	}
 
-	for (uint l = 0; l < lines.size();l++){
+	for (uint l = 0; l < lines.size(); l++){
 
-	  // Read in query pdb
-	  System sys;
-	  sys.readPdb(lines[l]);
+		// Read in query pdb
+		System sys;
+		sys.readPdb(lines[l]);
 
-	  // Select positions
-	  if (opt.sel == ""){
-	    opt.sel = MslTools::stringf("name CA");
-	  } else{
-	    opt.sel = MslTools::stringf("name CA and %s",opt.sel.c_str());
-	  }
-
-
-	  AtomSelection select(sys.getAtomPointers());
-	  AtomPointerVector ats = select.select(opt.sel);
-	  vector<string> positions;
-	  for (uint a = 0; a < ats.size();a++){
-	    positions.push_back(ats[a]->getPositionId());
-	  }
-	
-	  MSLOUT.stream() << "Number of positions to check: "<<positions.size()<<endl;
-
-	  // Go through each fragment length 5
-	  int frag_length = 5;
-	  for (uint p = 0;p < positions.size();p++){
-
-	    Position &pos = sys.getPosition(positions[p]); 
-	    int pos_index = pos.getIndexInChain();
-	    Chain *ch   = pos.getParentChain();
-
-	    if (pos_index-2+frag_length >= ch->positionSize()) continue;
-	    if (pos_index < 2) continue;
-
-	    //MSLOUT.fprintf(stdout, "\tWORKING ON %8s-%8s-%8s\n", ch->getPosition(pos_index-2).getPositionId().c_str(),pos.getPositionId().c_str(),ch->getPosition(pos_index-2+frag_length-1).getPositionId().c_str());
-
-	    string regex = opt.regex;
-	    string id1 = ch->getPosition(pos_index-2).getPositionId();
-	    string id2 = ch->getPosition(pos_index-2+frag_length-1).getPositionId();
-	    int matches = frags.searchForMatchingFragmentsLinear(sys, id1, id2, regex,opt.rmsd,opt.maxMatches);
-
-	    // print out no matches for this segment?
-	    if (matches == 0){
-	      continue;
-	    }
-
-      	    MSLOUT.fprintf(stdout, "\tNum matches: %d\n",matches);
-
-	    map<string,string> seqs = frags.getMatchedSequences();
-	    map<string,string>::iterator it;
-	    map<string,int> counts;
-	    int total = 0;
-	    map<string,int> aas;
-
-	    for (it = seqs.begin();it != seqs.end();it++){
-	      counts[it->second]++;
-	      total++;
-
-	      // Break down each sequence into per-position per-AA counts
-	      //MSLOUT.stream() << "\t\t"<<it->second.substr(2,1)<<endl;
-	      aas[it->second.substr(2,1)]++;
-
-	    }
-
-      	    //MSLOUT.fprintf(stdout, "\tHERE: %d\n",total);
-
-	    // Reorder aa's at this position based on observed counts.
-	    priority_queue<aaDat> orderedMap = orderMap(aas);
-
-	    string outline = MslTools::stringf("%1s %6s %1s %6d\t",ch->getChainId().c_str(),pos.getPositionId().c_str(),MslTools::getOneLetterCode(pos.getCurrentIdentity().getResidueName()).c_str(),total);
-	    string row = "";
-	    while (orderedMap.size() > 0){
-	      aaDat d = orderedMap.top();
-	      orderedMap.pop();
-
-	      double freq = (double)(d.count) / (double)(total) * (double)100;
-	      row = MslTools::stringf("  %1s %5.2f", d.aa.c_str(),freq)+row;
-	    }
-	    cout << "DATA: "<< outline <<row<<endl;
-
-	    if (opt.dump != 0){
-
-	      vector<AtomContainer *> results = frags.getAtomContainers();
-	      vector<string> pdbnames         = frags.getPDBNames();
-
-	      string outpdb = MslTools::stringf("%s_%1s%04d%s", opt.outpdb.c_str(), pos.getChainId().c_str(),pos.getResidueNumber(),pos.getResidueIcode().c_str());
-
-	      if (results.size() < opt.dump){
-		opt.dump = results.size();
-	      }
-	      if (pdbnames.size() != results.size()){
-		for (uint i = 0; i < results.size();i++){
-		  pdbnames.push_back(MslTools::stringf("results_%06d", i));
+		// Select positions
+		if (opt.sel == ""){
+			opt.sel = MslTools::stringf("name CA");
+		} else {
+			opt.sel = MslTools::stringf("name CA and %s", opt.sel.c_str());
 		}
 
-	      }
-	      for (uint i = 0; i < opt.dump;i++){
+		AtomSelection select(sys.getAtomPointers());
+		AtomPointerVector ats = select.select(opt.sel);
+		vector<string> positions;
+		for (uint a = 0; a < ats.size(); a++){
+			positions.push_back(ats[a]->getPositionId());
+		}
 
-		cout << "Writing: "<<MslTools::stringf("%s_%06d.pdb",outpdb.c_str(),i)<<" "<<results.size()<<endl;
+		MSLOUT.stream() << "Number of positions to check: " << positions.size() << endl;
 
-		System newSys;
-		cout << "HERE1"<<endl;
-		newSys.addAtoms(results[i]->getAtomPointers());
-		cout << "HERE2"<<endl;
-		cout << "HERE2b"<<pdbnames[i]<<endl;
-		newSys.writePdb(MslTools::stringf("%s_match_%06d_%s.pdb",outpdb.c_str(),i,pdbnames[i].c_str()));
-	        cout << "HERE3"<<endl;
-	      }
+		// Go through each fragment length 5
+		int frag_length = 5;
+		for (uint p = 0; p < positions.size(); p++){
 
-	    }
+			Position &pos = sys.getPosition(positions[p]); 
+			int pos_index = pos.getIndexInChain();
+			Chain *ch = pos.getParentChain();
 
+			if (pos_index - 2 + frag_length >= ch->positionSize()) continue;
+			if (pos_index < 2) continue;
+
+			MSLOUT.fprintf(stdout, "\tWORKING ON %8s-%8s-%8s\n", ch->getPosition(pos_index-2).getPositionId().c_str(), pos.getPositionId().c_str(), ch->getPosition(pos_index-2+frag_length-1).getPositionId().c_str());
+
+			string regex = opt.regex;
+			string id1 = ch->getPosition(pos_index-2).getPositionId();
+			string id2 = ch->getPosition(pos_index-2+frag_length-1).getPositionId();
+			int matches = frags.searchForMatchingFragmentsLinear(sys, id1, id2, regex, opt.rmsd, opt.maxMatches);
+
+			// print out no matches for this segment?
+			if (matches == 0){
+				continue;
+			}
+
+			MSLOUT.fprintf(stdout, "\tNum matches: %d\n", matches);
+
+			// matched sequences has had different formats, for now each PosId (chain-resi-icode) is a key to a sequence
+			// the sequence returned is a string with all the single letter AAs that matched that position
+			map<string, string> seqs = frags.getMatchedSequences();
+			
+			
+			// Only count middle position (pos)
+			//string key = MslTools::stringf("%s-%d-%s", bbAts[x]->getChainId().c_str(), bbAts[x]->getResidueNumber(), bbAts[x]->getResidueIcode().c_str());
+			string key= MslTools::stringf("%s-%d-%s", pos.getChainId().c_str(), pos.getResidueNumber(), pos.getResidueIcode().c_str());
+			map<string, string>::iterator it = seqs.find(key);
+			
+			if (it == seqs.end()){
+				MSLOUT.stream() << "NO MATCHES FOR: " << key << endl;
+				continue;
+			}
+			
+
+			// Total number amino acids match for this position is the length of the string of single AA matches
+			int total = it->second.length();
+
+			// Code to count all amino acids by single letter code in string it->second
+			map<string, int> aas;
+			for (char aa : it->second) {
+				aas[string(1, aa)]++;
+				
+			}
+			
+			// Print out the counts of each AA at this position
+			//for (auto aa : aas) {
+			//	MSLOUT.stream() << key <<"\tAA: " << aa.first << " " << aa.second << endl;
+			//}
+			
+			
+			/*
+			for (it = seqs.begin(); it != seqs.end(); it++){
+				if (it->first != key){
+					continue;
+				}
+
+				//counts[it->second]++;
+				//total++;
+
+				// Break down each sequence into per-position per-AA counts
+				//MSLOUT.stream() << "\t\t" << it->second.substr(2, 1) << endl;
+				aas[it->second.substr(2, 1)]++;
+			}
+			*/
+			MSLOUT.fprintf(stdout, "\tHERE: %d\n", total);
+
+			// Reorder aa's at this position based on observed counts.
+			priority_queue<aaDat> orderedMap = orderMap(aas);
+
+			string outline = MslTools::stringf("%1s%d %1s %6d\t", ch->getChainId().c_str(), pos.getResidueNumber(), MslTools::getOneLetterCode(pos.getCurrentIdentity().getResidueName()).c_str(), total);
+			string row = "";
+			string row_counts = "";
+			while (orderedMap.size() > 0){
+				aaDat d = orderedMap.top();
+				orderedMap.pop();
+
+				double freq = (double)(d.count) / (double)(total) * (double)100;
+				row = MslTools::stringf("  %1s %5.2f", d.aa.c_str(), freq) + row;
+				row_counts = MslTools::stringf(",%1s %d %d", d.aa.c_str(), d.count, total) + row_counts;
+			}
+			cout << "DATA: " << outline << row << endl;
+			cout << "COUNTS: " << outline << row_counts << endl;
+			
+			if (opt.dump != 0){
+
+				vector<AtomContainer *> results = frags.getAtomContainers();
+				vector<string> pdbnames = frags.getPDBNames();
+
+				string outpdb = MslTools::stringf("%s_%1s%04d%s", opt.outpdb.c_str(), pos.getChainId().c_str(), pos.getResidueNumber(), pos.getResidueIcode().c_str());
+
+				if (results.size() < opt.dump){
+					opt.dump = results.size();
+				}
+				if (pdbnames.size() != results.size()){
+					for (uint i = 0; i < results.size(); i++){
+						pdbnames.push_back(MslTools::stringf("results_%06d", i));
+					}
+				}
+				for (uint i = 0; i < opt.dump; i++){
+
+					cout << "Writing: " << MslTools::stringf("%s_%06d.pdb", outpdb.c_str(), i) << " " << results.size() << endl;
+
+					System newSys;
+					cout << "HERE1" << endl;
+					newSys.addAtoms(results[i]->getAtomPointers());
+					cout << "HERE2" << endl;
+					cout << "HERE2b" << pdbnames[i] << endl;
+					newSys.writePdb(MslTools::stringf("%s_match_%06d_%s.pdb", outpdb.c_str(), i, pdbnames[i].c_str()));
+					cout << "HERE3" << endl;
+				}
+			}
+		}
 	}
-     }
-
 }
 
 
