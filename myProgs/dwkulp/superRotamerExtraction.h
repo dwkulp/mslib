@@ -19,6 +19,9 @@ struct Options {
 		optional.push_back("includeAllNeighbors");
 		optional.push_back("neighborDist");
 		optional.push_back("pdbPath");
+		optional.push_back("partnerResidueType");
+		optional.push_back("chi");
+		optional.push_back("neighborTestAtoms");
 
 	}
 
@@ -26,11 +29,14 @@ struct Options {
 	string list;
 	vector<string> residueType;
 	string alignAtoms;
+	string neighborTestAtoms;
 	bool separateByResidueType;
 	bool includeAllNeighbors;
-	bool debug;
+	bool chi;
+	int debug;
 	double neighbor_dist;
 	string pdbPath;
+	vector<string> partnerResidueType;
 
 	// Storage for different types of options
 	vector<string> required;
