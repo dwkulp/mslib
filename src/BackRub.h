@@ -34,6 +34,7 @@ You should have received a copy of the GNU Lesser General Public
 #include "Chain.h"
 #include "AtomPointerVector.h"
 #include "System.h"
+#include "RandomNumberGenerator.h"
 
 namespace MSL { 
 class BackRub {
@@ -43,7 +44,8 @@ class BackRub {
 		~BackRub();
 		
 		void localSample(Chain &_ch, int _startResIndex, int _endResIndex, int _numFragments);
-
+		std::vector<AtomContainer *> multiSample(Chain &_ch, int _startResIndex, int _endResIndex,  int _numSamplingAttempts, int _numModels, double _rmsdCutoff=2.0);
+		bool doRub(Chain &_ch, int startRes, int endRes);
 		
 		AtomPointerVector&  getAtomPointers() { return sys.getAllAtomPointers(); }
 		std::string getNMRString() { return sysNMRFormat; }
@@ -52,6 +54,7 @@ class BackRub {
 		void doMinorRotation(Residue &_r1, Residue &_r2, CartesianPoint &_targetAtom1, CartesianPoint &_targetAtom2);
 
 		System sys;
+		RandomNumberGenerator rng;
 		std::string sysNMRFormat;
 };
 
