@@ -142,6 +142,7 @@ void AtomPointerVector::updateGeometricCenter(unsigned int _updateStamp){
 }
 */
 
+
 CartesianPoint& AtomPointerVector::getGeometricCenter(unsigned int _stamp) {
 	/************************************************************
 	 * A trick for speed, to prevent to recalculate the same center over
@@ -456,4 +457,10 @@ int AtomPointerVector::getMinAltConf(){
 
   return minAltConf;
 
+}
+
+void AtomPointerVector::setActiveConf(int _conf){
+  for (uint i = 0; i < size();i++){
+	(*this)[i]->setActiveConformation(_conf);
+  }
 }

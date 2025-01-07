@@ -87,13 +87,15 @@ class AtomPointerVector : public std::vector<Atom *> {
 
 		double rmsd(const AtomPointerVector &_av) const;
 
-                int clashCheck(AtomPointerVector &_av, double _dist2_tol=9);
+        int clashCheck(AtomPointerVector &_av, double _dist2_tol=9);
+
 		// Get the minimum or maximum number of alt coordinates for over all atoms
 		int getMinAltConf();
 		int getMaxAltConf();
 
+		void setActiveConf(int _conf);
 
-               void setTempFactor(double &_temp);
+        void setTempFactor(double &_temp);
 	     //   void translate(double _x, double _y, double _z);         
 	     //   void translate(const CartesianPoint &_vec);         
 		//void rotate(const Matrix &_rotMat);
