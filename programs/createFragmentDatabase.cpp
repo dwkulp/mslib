@@ -56,30 +56,16 @@ int main(int argc, char *argv[]) {
 
 	MSLOUT.stream() << "READ LIST"<<endl;
 	vector<string> pdbs;  
+	vector<string> chains;
 	ifstream fs;
 
-	fs.open(opt.list.c_str());
-	if (fs.fail()){
-		cerr<<"Cannot open file "<<opt.list<<endl;
-		exit(1);
+	if (opt.chains) {
+		bool retVal = MslTools::getPdbsFromFile(opt.list, pdbs, chains, opt.pdbPath, opt.cifPath);
+	} else {
+		bool retVal = MslTools::getPdbsFromFile(opt.list, pdbs, opt.pdbPath, opt.cifPath);
 	}
-
-	while(true){
-		string line;
-		getline(fs, line);
-
-		if(fs.fail()){
-			//no more lines to read, quite the while.
-			break;
-		}
-
-		if(line==""){
-			continue;
-		}
-		pdbs.push_back(line);
-	}
-
-	fs.close();
+	cout << "Number of files: " << pdbs.size() << endl;
+	cout << "Number of chains: " << chains.size() << endl;
 
 	// Regular expression object
 	RegEx re;
@@ -87,21 +73,31 @@ int main(int argc, char *argv[]) {
 
 	// Read a list of PDBs into a single atom vector.
 	int totalMatches = 0;
+	long int countOfCAs = 0;
 	AtomPointerVector results;
 	for (uint i = 0; i < pdbs.size();i++){
+
+		if (i > 0 && i % (pdbs.size() / 10) == 0) {
+			cout << "Processed " << (i * 100 / pdbs.size()) << "% of PDBs, current results size: " << results.size() << " with "<<countOfCAs<<" residues."<<endl;
+		}
 		
 		MSLOUT.stream() << "Opening "<<pdbs[i]<<endl;
 		System sys;
-		sys.readPdb(pdbs[i]);
+		sys.readStructureFile(pdbs[i]);
 		
 
 		for (uint c = 0; c < sys.chainSize();c++){
 		  Chain &ch = sys.getChain(c);
+		  
+		  // Skip if chains are specified and this chain is not in the list.
+		  if (opt.chains && chains[i] != ch.getChainId()) continue;
 
 		  if (opt.regex == ""){
 		    for (uint a = 0; a < ch.atomSize();a++){
 		      if (!opt.allAtom && ch.getAtom(a).getName() != "CA") continue;
-
+			  if (ch.getAtom(a).getName() == "CA") {
+				countOfCAs++;
+			  }
 		      Atom *tmp = new Atom(ch.getAtom(a));
 		      tmp->setSegID(MslTools::getFileName(pdbs[i]));
 		      results.push_back(tmp);
@@ -116,32 +112,32 @@ int main(int argc, char *argv[]) {
 			
 		      bool sequential = true;
 		      for (uint r = matches[m].first; r < matches[m].second;r++){
-			if (r < matches[m].second-1 && ch.getResidue(r).getResidueNumber()+1 != ch.getResidue(r+1).getResidueNumber() && ch.getResidue(r).getResidueNumber()   != ch.getResidue(r+1).getResidueNumber()){
-			MSLOUT.stream() << "Not sequential: "<<ch.getResidue(r).toString()<<" "<<ch.getResidue(r+1).toString()<<endl;
-			    sequential = false;
-			    break;
-			}
+				if (r < matches[m].second-1 && ch.getResidue(r).getResidueNumber()+1 != ch.getResidue(r+1).getResidueNumber() && ch.getResidue(r).getResidueNumber()   != ch.getResidue(r+1).getResidueNumber()){
+				MSLOUT.stream() << "Not sequential: "<<ch.getResidue(r).toString()<<" "<<ch.getResidue(r+1).toString()<<endl;
+			    	sequential = false;
+			    	break;
+				}
 			
-		      }
+			  }
 		      
 		      if (!sequential) { MSLOUT.stream() << "not sequential\n"; continue;}
 		      totalMatches++;
 
 		      for (uint r = matches[m].first; r < matches[m].second;r++){
-			if (opt.allAtom){
-			  for (uint a = 0; a < ch.getResidue(r).atomSize();a++){
-			    Atom *tmp = new Atom(ch.getResidue(r).getAtom(a));
-			    tmp->setSegID(MslTools::getFileName(pdbs[i]));
-			    results.push_back(tmp);
-			    tmp = NULL;
-			  }
-			} else {
-			  if (ch.getResidue(r).atomExists("CA")){
-			    Atom *tmp = new Atom(ch.getResidue(r)("CA"));
-			    tmp->setSegID(MslTools::getFileName(pdbs[i]));
-			    results.push_back(tmp);
-			  }
-			} // IF-ELSE opt.allAtom
+				if (opt.allAtom){
+				  	for (uint a = 0; a < ch.getResidue(r).atomSize();a++){
+					    Atom *tmp = new Atom(ch.getResidue(r).getAtom(a));
+					    tmp->setSegID(MslTools::getFileName(pdbs[i]));
+			    		results.push_back(tmp);
+			    		tmp = NULL;
+			  		}
+				} else {
+			  		if (ch.getResidue(r).atomExists("CA")){
+				    	Atom *tmp = new Atom(ch.getResidue(r)("CA"));
+			    		tmp->setSegID(MslTools::getFileName(pdbs[i]));
+			    		results.push_back(tmp);
+			  		}
+				} // IF-ELSE opt.allAtom
 
 		      } // END FOR matches[m] (a range of residues)
 
@@ -162,7 +158,8 @@ int main(int argc, char *argv[]) {
 	// Write out binary checkpoint file.
 	results.save_checkpoint(opt.database);
 
-	MSLOUT.stream() <<"Done. Got "<<totalMatches<<" total matches. took: "<<(t.getWallTime() - start)<<" seconds."<<endl<<endl;
+	cout <<"Done. Got "<<totalMatches<<" total matches. " << " number of residues: "<<countOfCAs<<" took: "<<(t.getWallTime() - start)<<" seconds."<<endl<<endl;
+	
 }
 
 Options setupOptions(int theArgc, char * theArgv[]){
@@ -201,6 +198,20 @@ Options setupOptions(int theArgc, char * theArgv[]){
 	opt.allAtom = OP.getBool("allAtoms");
 	if (OP.fail()){
 	  opt.allAtom = false;
+	}
+
+	 opt.pdbPath = OP.getString("pdbPath");
+    if (OP.fail()) {
+        std::cerr << "pdbPath not specified.\n";
+    }
+
+    opt.cifPath = OP.getString("cifPath");
+    if (OP.fail()) {
+        std::cerr << "cifPath not specified.\n";
+    }
+	opt.chains = OP.getBool("chains");
+	if (OP.fail()){
+		opt.chains = false;
 	}
 	cout << OP<<endl;
 	return opt;

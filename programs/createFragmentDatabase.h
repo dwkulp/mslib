@@ -27,35 +27,44 @@ You should have received a copy of the GNU Lesser General Public
 ----------------------------------------------------------------------------
 */
 
+#ifndef CREATEFRAGMENTDATABASE_H
+#define CREATEFRAGMENTDATABASE_H
+
+#include <string>
+#include <vector>
+
 // Define Input Options and Store them.
 struct Options {
 
-	// Set up options here...
-	Options(){
+    // Set up options here...
+    Options() {
+        // Input LIST OF PDBS
+        required.push_back("list");
+        required.push_back("database");
 
-		// Input LIST OF PDBS
-		required.push_back("list");
-		required.push_back("database");
+        optional.push_back("regex");
+        optional.push_back("allAtom");
+        optional.push_back("pdbPath");
+        optional.push_back("cifPath");
+		optional.push_back("chains");
+    }
 
-		optional.push_back("regex");
-		optional.push_back("allAtom");
+    // Storage for the values of each option
+    std::string list;
+    std::string database;
+    std::string regex;
+    bool allAtom;
+    std::string pdbPath;
+    std::string cifPath;
+	bool chains;
 
-
-	}
-
-	// Storage for the vales of each optional
-	std::string list;
-	std::string database;
-        std::string regex;
-        bool allAtom;
-
-	// Storage for different types of options
-	std::vector<std::string> required;
-	std::vector<std::string> optional;
-
+    // Storage for different types of options
+    std::vector<std::string> required;
+    std::vector<std::string> optional;
 };
 
-
 // Helper function to clean up main.
-Options setupOptions(int theArgc, char * theArgv[]);
+Options setupOptions(int theArgc, char* theArgv[]);
+
+#endif // CREATEFRAGMENTDATABASE_H
 
