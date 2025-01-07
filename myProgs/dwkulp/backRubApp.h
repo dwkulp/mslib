@@ -13,18 +13,20 @@ struct Options {
 		// Input pdb
 		required.push_back("pdb");
 		optional.push_back("numModels");
+		optional.push_back("numSampling");
 
 
 	}
 
 	// Storage for the vales of each optional
 	string pdb;
-        int numModels;
+    int numModels;
+	int numSampling;
 
 	// Storage for different types of options
 	vector<string> required;
 	vector<string> optional;
-        vector<string> defaultArgs;
+    vector<string> defaultArgs;
 
 
 };
