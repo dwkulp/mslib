@@ -11,8 +11,9 @@ MYPROGS   = discoverMotif generateRotamerLibrary getTripletCaMeasurements superR
 	    setupRosettaMSA designCheck domainSasa getMeasurement getPairEnergy metalRotamers patchAnalysis compareRosettaModels setupRosettaFixbb \
 	    refinePotentialFusions buildRotamers resurfaceSaltBridges findMotifMSA \
 	    findDisulfides  getGlycanDihedrals alignByFrame aaScan \
-        simpleNanoparticleModeling convertPDBtoCIF getGlycanDihedrals betaDecider betaAnalysis barrelDecider_v7 alignByFrame addCodonFreq moveToOrigin \
-		rigidBodyGeneration transformSelections getSSE backRubApp getDeltaDistSASA 
+        simpleNanoparticleModeling convertPDBtoCIF  betaDecider betaAnalysis barrelDecider_v7 addCodonFreq moveToOrigin \
+		rigidBodyGeneration transformSelections getSSE backRubApp getDeltaDistSASA computeHeptadRepeats getExposedPositions
+
 #  alignList cluster getDistanceToHelixAxis  calcSasa  	    structureSelectedMSA transplantResidues \
 # analyzeSurfacePositionsMSA  findTermini  measureDisulfides multiHelixMatch  analyzeRosettaModels alignVirus getRosettaScores 
 #calcSasaInterface makeChimeraMSA genIdealHelix fuseHelix 
